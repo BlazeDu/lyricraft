@@ -12,13 +12,13 @@
 
 ---
 
-## 项目概述
+## 📖 项目概述
 
 **Lyricraft** 是一款基于 **Android Jetpack Compose + ExoPlayer** 构建的纯原生安卓轻量歌词制作工具。用户可导入纯文本歌词、加载本地音频，通过手动打点匹配时间轴，最终导出标准 **`.lrc`** 格式歌词文件。
 
 本项目为**纯离线、本地优先**应用 — 无需联网、无需注册，所有数据均在本地处理，无隐私泄露风险。
 
-## 核心功能
+## ✨ 核心功能
 
 | 功能 | 描述 |
 |------|------|
@@ -32,7 +32,7 @@
 | 🌓 深色模式 | 跟随系统自动切换 Material 3 深浅配色 |
 | 📱 底部导航 | 文本导入 / 时间打点 / 设置 三页面切换 |
 
-## 技术栈
+## 🛠️ 技术栈
 
 | 技术 | 说明 |
 |------|------|
@@ -42,13 +42,13 @@
 | **Activity Result API** | 现代化文件选择回调 |
 | **Kotlin Coroutines** | 协程处理 IO 与 UI 刷新 |
 
-## 架构设计
+## 🏗️ 架构设计
 
 - **单 Activity + 纯 Compose**：无 Fragment，无传统 XML 布局
 - **状态驱动 UI**：所有状态由 `remember` 托管，数据变更自动刷新视图
 - **轻量简洁**：无 MVVM 过度设计，代码清晰易维护
 
-## 项目结构
+## 📂 项目结构
 
 ```
 app/src/main/java/com/storm/lyricraft/
@@ -73,9 +73,9 @@ app/src/main/java/com/storm/lyricraft/
     └── TimeUtils.kt               # LRC 时间格式化工具
 ```
 
-## 快速开始
+## 🚀 快速开始
 
-### 环境要求
+### 📋 环境要求
 
 | 工具 | 版本 |
 |------|------|
@@ -84,7 +84,7 @@ app/src/main/java/com/storm/lyricraft/
 | Min SDK | API 21 (Android 5.0) |
 | Target SDK | API 34 (Android 14) |
 
-### 克隆与构建
+### 🔨 克隆与构建
 
 ```bash
 # 克隆仓库
@@ -96,14 +96,14 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 ./gradlew installDebug
 ```
 
-## 使用指南
+## 📱 使用指南
 
 1. **导入歌词** — 切换到 **「文本」** 页，粘贴完整纯文本歌词（每行一句），点击 **「导入歌词并进入打点界面」**
 2. **加载音频** — 进入 **「时间」** 页，点击 **「选择音频」**，从本地选取音频文件
 3. **时间打点** — 点击 **「播放」** 开始播放，在每句歌词对应时刻点击 **「记录当前歌曲时间」**，应用自动记录并切换至下一行
 4. **导出 LRC** — 点击 **「导出 LRC」**，选择保存文件夹与文件名，确认后生成标准 LRC 文件
 
-## 时间格式
+## ⏱️ 时间格式
 
 时间戳采用标准 LRC 格式：`[分钟:秒.厘秒]`，例如：
 
@@ -112,18 +112,18 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 [00:25.67]第二句歌词
 ```
 
-## 权限适配
+## 🔐 权限适配
 
 - **Android 10 及以下**：使用传统文件读写权限
 - **Android 11+ (API 30+)**：适配 `MANAGE_EXTERNAL_STORAGE` 全局文件访问权限
 - 应用内提供一键跳转系统设置页面，引导用户授权
 
-## 资源管理
+## 🧹 资源管理
 
 - `DisposableEffect` 监听生命周期，页面销毁时自动释放 ExoPlayer 实例
 - 协程自动终止，无内存泄漏风险
 
-## 后续迭代方向
+## 🧩 后续迭代方向
 
 - [ ] 支持导入已有 LRC 文件并编辑
 - [ ] 批量微调时间 / 整体偏移
@@ -132,7 +132,7 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 - [ ] 撤销 / 重做功能
 - [ ] 批量删除歌词
 
-## 贡献指南
+## 🤝 贡献指南
 
 欢迎提交 Issue 或 Pull Request！
 
@@ -142,11 +142,11 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 提交 Pull Request
 
-## 许可证
+## 📄 许可证
 
 本项目采用 MIT 许可证，详见 [LICENSE](LICENSE) 文件。
 
-## 致谢
+## 🙏 致谢
 
 - [Jetpack Compose](https://developer.android.com/jetpack/compose) — 现代声明式 UI 工具包
 - [ExoPlayer](https://exoplayer.dev/) — 强大的 Android 音视频播放引擎

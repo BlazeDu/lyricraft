@@ -12,13 +12,13 @@
 
 ---
 
-## Overview
+## 📖 Overview
 
 **Lyricraft** is a lightweight, pure-native Android lyrics creation tool built with **Jetpack Compose** and **ExoPlayer**. It allows users to import plain text lyrics, load local audio files, manually synchronize lyrics with timestamps via tapping, and export standard **`.lrc`** lyric files.
 
 This is a **fully offline, local-first** application — no internet connection required, no user registration, and no privacy concerns. All data stays on your device.
 
-## Key Features
+## ✨ Key Features
 
 | Feature | Description |
 |---------|-------------|
@@ -32,7 +32,7 @@ This is a **fully offline, local-first** application — no internet connection 
 | 🌓 Dark Mode | Auto-switch between Material 3 light/dark themes |
 | 📱 Bottom Navigation | Three tabs: Input Text / Record Time / Settings |
 
-## Technology Stack
+## 🛠️ Technology Stack
 
 | Technology | Description |
 |------------|-------------|
@@ -42,13 +42,13 @@ This is a **fully offline, local-first** application — no internet connection 
 | **Activity Result API** | Modern file picker callbacks |
 | **Kotlin Coroutines** | IO operations and UI updates |
 
-## Architecture
+## 🏗️ Architecture
 
 - **Single Activity + Pure Compose**: No Fragments, no XML layouts
 - **State-driven UI**: All states managed by `remember`, automatic UI updates on data changes
 - **Lightweight**: No MVVM overhead — simple, clean, and maintainable
 
-## Project Structure
+## 📂 Project Structure
 
 ```
 app/src/main/java/com/storm/lyricraft/
@@ -73,9 +73,9 @@ app/src/main/java/com/storm/lyricraft/
     └── TimeUtils.kt               # LRC time formatting
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
-### Requirements
+### 📋 Requirements
 
 | Tool | Version |
 |------|---------|
@@ -84,7 +84,7 @@ app/src/main/java/com/storm/lyricraft/
 | Min SDK | API 21 (Android 5.0) |
 | Target SDK | API 34 (Android 14) |
 
-### Build & Run
+### 🔨 Build & Run
 
 ```bash
 # Clone the repository
@@ -96,14 +96,14 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 ./gradlew installDebug
 ```
 
-## How to Use
+## 📱 How to Use
 
 1. **Import Lyrics** — Switch to the **"Text"** tab, paste your plain-text lyrics (one line per sentence), tap **"Import & Go to Tagging"**.
 2. **Load Audio** — Go to the **"Time"** tab, tap **"Select Audio"** and choose a local audio file.
 3. **Tag Timestamps** — Tap **"Play"** to start playback. At each lyric line, tap **"Record Current Time"** — the timestamp is saved and the next line is auto-selected.
 4. **Export LRC** — Tap **"Export LRC"**, choose a save folder and filename, then confirm to generate the `.lrc` file.
 
-## Time Format
+## ⏱️ Time Format
 
 Timestamps follow the standard LRC format: `[MM:SS.cc]`, for example:
 
@@ -112,18 +112,18 @@ Timestamps follow the standard LRC format: `[MM:SS.cc]`, for example:
 [00:25.67]Second lyric line
 ```
 
-## Permission Handling
+## 🔐 Permission Handling
 
 - **Android 10 and below**: Traditional file read/write permissions
 - **Android 11+ (API 30+)**: Uses `MANAGE_EXTERNAL_STORAGE` with a one-click jump to system settings
 - The app guides users through the permission grant process
 
-## Resource Management
+## 🧹 Resource Management
 
 - `DisposableEffect` automatically releases the ExoPlayer instance when the screen is destroyed
 - Coroutines are automatically cancelled — no memory leaks
 
-## Future Plans
+## 🧩 Future Plans
 
 - [ ] Import and edit existing `.lrc` files
 - [ ] Batch time adjustment / global offset
@@ -132,7 +132,7 @@ Timestamps follow the standard LRC format: `[MM:SS.cc]`, for example:
 - [ ] Undo / Redo support
 - [ ] Batch delete lyrics
 
-## Contributing
+## 🤝 Contributing
 
 Issues and Pull Requests are welcome!
 
@@ -142,11 +142,11 @@ Issues and Pull Requests are welcome!
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
+## 📄 License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
 - [Jetpack Compose](https://developer.android.com/jetpack/compose) — Modern declarative UI toolkit
 - [ExoPlayer](https://exoplayer.dev/) — Powerful Android media playback engine
