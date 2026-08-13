@@ -12,34 +12,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -47,59 +28,24 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import com.storm.lyricraft.data.LyricLine
+import com.storm.lyricraft.ui.components.ExportDialog
+import com.storm.lyricraft.ui.components.FolderPickerDialog
+import com.storm.lyricraft.ui.components.PermissionTipDialog
+import com.storm.lyricraft.ui.navigation.TabPage
+import com.storm.lyricraft.ui.screens.InputTextScreen
+import com.storm.lyricraft.ui.screens.RecordTimeScreen
+import com.storm.lyricraft.ui.screens.SettingScreen
+import com.storm.lyricraft.ui.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.FileOutputStream
-
-// ============ M3 主题配色 ============
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF2979FF),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFE3F2FD),
-    onPrimaryContainer = Color(0xFF0D47A1),
-    background = Color(0xFFFAFAFA),
-    onBackground = Color(0xFF121212),
-    surface = Color.White,
-    onSurface = Color(0xFF121212),
-    surfaceVariant = Color(0xFFE8EAF6),
-    onSurfaceVariant = Color(0xFF31313C)
-)
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF64B5F6),
-    onPrimary = Color(0xFF002984),
-    primaryContainer = Color(0xFF153660),
-    onPrimaryContainer = Color(0xFFD0E4FF),
-    background = Color(0xFF121212),
-    onBackground = Color(0xFFE0E0E0),
-    surface = Color(0xFF1E1E1E),
-    onSurface = Color(0xFFE0E0E0),
-    surfaceVariant = Color(0xFF2D2D3A),
-    onSurfaceVariant = Color(0xFFC5C6D0)
-)
-
-@Composable
-fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = MaterialTheme.typography,
-        shapes = MaterialTheme.shapes,
-        content = content
-    )
-}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,34 +67,43 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class TabPage { InputText, RecordTime, Setting }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricEditor(openPermSetting: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val playerState = remember { mutableStateOf<ExoPlayer?>(null) }
-    val lyricList = remember { mutableStateListOf<LyricLine>() }
 
+    // ============ 播放器状态 ============
+    val playerState = remember { mutableStateOf<ExoPlayer?>(null) }
     val currentPosState = remember { mutableStateOf(0L) }
     val durationState = remember { mutableStateOf(0L) }
     val isPlayingState = remember { mutableStateOf(false) }
     val audioLoadedState = remember { mutableStateOf(false) }
     val audioBaseNameState = remember { mutableStateOf("lyric") }
-    val currentTab = remember { mutableStateOf(TabPage.InputText) }
-    val rawLyricText = remember { mutableStateOf("") }
+
+    // ============ 歌词数据 ============
+    val lyricList = remember { mutableStateListOf<LyricLine>() }
     val currentRecordIndex = remember { mutableStateOf(0) }
 
+    // ============ UI 导航 ============
+    val currentTab = remember { mutableStateOf(TabPage.InputText) }
+    val rawLyricText = remember { mutableStateOf("") }
+
+    // ============ 导出弹窗状态 ============
     val showExportDialogState = remember { mutableStateOf(false) }
     val selectedSaveDirState = remember { mutableStateOf<File?>(null) }
     val fileNameInputState = remember { mutableStateOf("lyric.lrc") }
+
+    // ============ 文件夹选择器状态 ============
     val showFolderPickerState = remember { mutableStateOf(false) }
     val currentBrowseDirState = remember { mutableStateOf(Environment.getExternalStorageDirectory()) }
     val dirChildrenState = remember { mutableStateOf(listOf<File>()) }
     val canGoUpState = remember { mutableStateOf(false) }
+
+    // ============ 权限提示弹窗 ============
     val showPermTipState = remember { mutableStateOf(false) }
 
+    // ============ 加载文件夹列表 ============
     fun loadFolderList(targetDir: File) {
         scope.launch(Dispatchers.IO) {
             val list = targetDir.listFiles()
@@ -164,6 +119,7 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         }
     }
 
+    // ============ 导出 LRC ============
     fun saveLrcToFolder() {
         val saveDir = selectedSaveDirState.value
         val fileName = fileNameInputState.value.trim()
@@ -184,7 +140,7 @@ fun LyricEditor(openPermSetting: () -> Unit) {
                         appendLine("[${it.formatTime()}]${it.text}")
                     }
                 }
-                FileOutputStream(saveFile).bufferedWriter().use { it.write(content) }
+                java.io.FileOutputStream(saveFile).bufferedWriter().use { it.write(content) }
                 scope.launch(Dispatchers.Main) {
                     Toast.makeText(context, "导出成功", Toast.LENGTH_SHORT).show()
                     showExportDialogState.value = false
@@ -198,13 +154,13 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         }
     }
 
+    // ============ 音频选择器 ============
     val audioPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         playerState.value?.release()
         val newPlayer = ExoPlayer.Builder(context).build()
         playerState.value = newPlayer
         var displayName = "lyric"
-        // 压制API Level警告，不影响运行
         @Suppress("DEPRECATION")
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             if (cursor.moveToFirst()) {
@@ -220,10 +176,12 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         audioLoadedState.value = true
     }
 
+    // ============ 生命周期：释放播放器 ============
     DisposableEffect(Unit) {
         onDispose { playerState.value?.release() }
     }
 
+    // ============ 进度轮询 ============
     LaunchedEffect(playerState.value) {
         while (true) {
             val p = playerState.value ?: break
@@ -234,12 +192,14 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         }
     }
 
+    // ============ 文件夹弹窗自动刷新 ============
     LaunchedEffect(showFolderPickerState.value) {
         if (showFolderPickerState.value) {
             loadFolderList(currentBrowseDirState.value)
         }
     }
 
+    // ============ 解析歌词 ============
     fun parseRawLyric() {
         val lines = rawLyricText.value.split("\n")
             .map { it.trim() }
@@ -253,6 +213,7 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         currentTab.value = TabPage.RecordTime
     }
 
+    // ============ 时间打点 ============
     fun recordCurrentTime() {
         if (lyricList.isEmpty()) {
             Toast.makeText(context, "请先导入歌词", Toast.LENGTH_SHORT).show()
@@ -267,12 +228,12 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         currentRecordIndex.value = idx + 1
     }
 
+    // ============ UI ============
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        // 底栏：surfaceVariant 和页面background区分颜色，铺满底部无悬浮
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
                 tonalElevation = 4.dp
             ) {
                 NavigationBarItem(
@@ -296,283 +257,90 @@ fun LyricEditor(openPermSetting: () -> Unit) {
             }
         }
     ) { padding ->
-        // 主页面背景
         Surface(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            color = MaterialTheme.colorScheme.background
+            color = androidx.compose.material3.MaterialTheme.colorScheme.background
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 when (currentTab.value) {
-                    TabPage.InputText -> Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        Text("粘贴全部歌词（自动按换行分割每行）")
-                        TextField(
-                            value = rawLyricText.value,
-                            onValueChange = { rawLyricText.value = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            placeholder = { Text("在这里粘贴完整歌词，每一行会自动生成一条歌词记录") },
-                            maxLines = Int.MAX_VALUE
-                        )
-                        Button(
-                            onClick = ::parseRawLyric,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp)
-                        ) {
-                            Text("导入歌词并进入打点界面")
+                    TabPage.InputText -> InputTextScreen(
+                        rawLyricText = rawLyricText.value,
+                        onTextChange = { rawLyricText.value = it },
+                        onParse = ::parseRawLyric
+                    )
+
+                    TabPage.RecordTime -> RecordTimeScreen(
+                        lyricList = lyricList,
+                        currentRecordIndex = currentRecordIndex.value,
+                        audioLoaded = audioLoadedState.value,
+                        player = playerState.value,
+                        currentPos = currentPosState.value,
+                        duration = durationState.value,
+                        isPlaying = isPlayingState.value,
+                        onSelectAudio = { audioPicker.launch("audio/*") },
+                        onShowExport = {
+                            fileNameInputState.value = "${audioBaseNameState.value}.lrc"
+                            showExportDialogState.value = true
+                        },
+                        onShowPermTip = { showPermTipState.value = true },
+                        onPlayPause = {
+                            if (isPlayingState.value) playerState.value?.pause()
+                            else playerState.value?.play()
+                        },
+                        onSeek = { pos ->
+                            playerState.value?.seekTo(pos)
+                            currentPosState.value = pos
+                        },
+                        onRecordTime = ::recordCurrentTime,
+                        onUpdateLyric = { index, newText ->
+                            lyricList[index] = lyricList[index].copy(text = newText)
+                        },
+                        onDeleteLyric = { index ->
+                            lyricList.removeAt(index)
                         }
-                    }
+                    )
 
-                    TabPage.RecordTime -> Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Button(onClick = { audioPicker.launch("audio/*") }) {
-                                Text("选择音频")
-                            }
-                            Button(onClick = {
-                                fileNameInputState.value = "${audioBaseNameState.value}.lrc"
-                                showExportDialogState.value = true
-                            }) {
-                                Text("导出LRC")
-                            }
-                            Button(onClick = { showPermTipState.value = true }) {
-                                Text("权限设置")
-                            }
-                        }
-
-                        Box(modifier = Modifier.padding(vertical = 6.dp))
-
-                        if (audioLoadedState.value && playerState.value != null) {
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Button(onClick = {
-                                    if (isPlayingState.value) playerState.value?.pause() else playerState.value?.play()
-                                }) {
-                                    Text(if (isPlayingState.value) "暂停" else "播放")
-                                }
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Slider(
-                                        value = currentPosState.value.toFloat(),
-                                        valueRange = 0f..durationState.value.coerceAtLeast(0).toFloat(),
-                                        onValueChange = {
-                                            playerState.value?.seekTo(it.toLong())
-                                            currentPosState.value = it.toLong()
-                                        },
-                                        colors = SliderDefaults.colors(
-                                            activeTrackColor = MaterialTheme.colorScheme.primary
-                                        )
-                                    )
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(formatMs(currentPosState.value), style = MaterialTheme.typography.bodySmall)
-                                        Text(formatMs(durationState.value), style = MaterialTheme.typography.bodySmall)
-                                    }
-                                }
-                            }
-                            Box(modifier = Modifier.padding(vertical = 6.dp))
-
-                            Button(
-                                onClick = ::recordCurrentTime,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("记录当前歌曲时间（自动下一行）")
-                            }
-                            Box(modifier = Modifier.padding(vertical = 6.dp))
-                        } else {
-                            Text("请先选择音频", modifier = Modifier.padding(vertical = 10.dp))
-                        }
-
-                        LazyColumn(modifier = Modifier.weight(1f)) {
-                            itemsIndexed(lyricList) { index, item ->
-                                LyricItemCompose(
-                                    data = item,
-                                    isCurrentRecord = index == currentRecordIndex.value,
-                                    onUpdate = { newText ->
-                                        lyricList[index] = item.copy(text = newText)
-                                    },
-                                    onDelete = { lyricList.remove(item) }
-                                )
-                            }
-                        }
-                    }
-
-                    TabPage.Setting -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("设置页面", style = MaterialTheme.typography.headlineMedium)
-                            Text("功能开发中", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
+                    TabPage.Setting -> SettingScreen()
                 }
             }
         }
 
-        if (showExportDialogState.value) {
-            AlertDialog(
-                onDismissRequest = { showExportDialogState.value = false },
-                title = { Text("导出") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(
-                                modifier = Modifier.weight(1f),
-                                value = selectedSaveDirState.value?.absolutePath ?: "未选择文件夹",
-                                onValueChange = {},
-                                enabled = false,
-                                label = { Text("保存目录") }
-                            )
-                            Button(modifier = Modifier.padding(start = 8.dp), onClick = {
-                                showFolderPickerState.value = true
-                            }) {
-                                Text("选择目录")
-                            }
-                        }
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = fileNameInputState.value,
-                            onValueChange = { fileNameInputState.value = it },
-                            label = { Text("文件名") }
-                        )
-                    }
-                },
-                confirmButton = { Button(onClick = ::saveLrcToFolder) { Text("确认导出") } },
-                dismissButton = { Button(onClick = { showExportDialogState.value = false }) { Text("取消") } }
-            )
-        }
-
-        if (showFolderPickerState.value) {
-            AlertDialog(
-                onDismissRequest = { showFolderPickerState.value = false },
-                title = { Text("选择保存文件夹") },
-                text = {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text("当前目录：${currentBrowseDirState.value.absolutePath}", modifier = Modifier.padding(bottom = 8.dp))
-                        HorizontalDivider(modifier = Modifier.padding(bottom = 6.dp))
-                        if (canGoUpState.value) {
-                            Text(
-                                text = "../",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        currentBrowseDirState.value.parentFile?.let { loadFolderList(it) }
-                                    }
-                                    .padding(8.dp),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                            itemsIndexed(dirChildrenState.value) { _, folder ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { loadFolderList(folder) }
-                                        .padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("📁 ")
-                                    Text(folder.name, modifier = Modifier.padding(start = 8.dp))
-                                }
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(onClick = {
-                        selectedSaveDirState.value = currentBrowseDirState.value
-                        showFolderPickerState.value = false
-                    }) {
-                        Text("选用此文件夹")
-                    }
-                },
-                dismissButton = {
-                    Button(onClick = { showFolderPickerState.value = false }) {
-                        Text("取消")
-                    }
-                }
-            )
-        }
-
-        if (showPermTipState.value) {
-            AlertDialog(
-                onDismissRequest = { showPermTipState.value = false },
-                title = { Text("文件权限") },
-                text = { Text("需要授予【所有文件访问权限】才能浏览并选择文件夹保存LRC文件。") },
-                confirmButton = {
-                    Button(onClick = {
-                        openPermSetting()
-                        showPermTipState.value = false
-                    }) {
-                        Text("前往设置开启")
-                    }
-                },
-                dismissButton = { Button(onClick = { showPermTipState.value = false }) { Text("稍后") } }
-            )
-        }
-    }
-}
-
-@Composable
-fun LyricItemCompose(
-    data: LyricLine,
-    isCurrentRecord: Boolean,
-    onUpdate: (String) -> Unit,
-    onDelete: () -> Unit
-) {
-    val textState = remember { mutableStateOf(data.text) }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .padding(horizontal = 6.dp)
-            .background(if (isCurrentRecord) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-            .padding(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Text("[${data.formatTime()}]")
-        OutlinedTextField(
-            value = textState.value,
-            onValueChange = {
-                textState.value = it
-                onUpdate(it)
-            },
-            modifier = Modifier.weight(1f),
-            singleLine = false,
-            placeholder = { Text("输入歌词") }
+        // ============ 弹窗 ============
+        ExportDialog(
+            show = showExportDialogState.value,
+            selectedSaveDir = selectedSaveDirState.value,
+            fileNameInput = fileNameInputState.value,
+            onFileNameChange = { fileNameInputState.value = it },
+            onSelectDir = { showFolderPickerState.value = true },
+            onConfirm = ::saveLrcToFolder,
+            onDismiss = { showExportDialogState.value = false }
         )
-        Button(onClick = onDelete) {
-            Text("删除")
-        }
+
+        FolderPickerDialog(
+            show = showFolderPickerState.value,
+            currentDir = currentBrowseDirState.value,
+            dirChildren = dirChildrenState.value,
+            canGoUp = canGoUpState.value,
+            onFolderClick = { loadFolderList(it) },
+            onGoUp = {
+                currentBrowseDirState.value.parentFile?.let { loadFolderList(it) }
+            },
+            onConfirm = {
+                selectedSaveDirState.value = currentBrowseDirState.value
+                showFolderPickerState.value = false
+            },
+            onDismiss = { showFolderPickerState.value = false }
+        )
+
+        PermissionTipDialog(
+            show = showPermTipState.value,
+            onConfirm = {
+                openPermSetting()
+                showPermTipState.value = false
+            },
+            onDismiss = { showPermTipState.value = false }
+        )
     }
-}
-
-fun formatMs(ms: Long): String {
-    if (ms <= 0) return "00:00.00"
-    val secAll = ms / 1000
-    val min = secAll / 60
-    val sec = secAll % 60
-    val msPart = (ms % 1000) / 10
-    return "%02d:%02d.%02d".format(min, sec, msPart)
-}
-
-data class LyricLine(val timeMs: Long, val text: String) {
-    fun formatTime() = formatMs(timeMs)
 }
