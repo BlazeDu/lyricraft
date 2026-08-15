@@ -1,5 +1,6 @@
 package com.storm.lyricraft.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,13 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.ExoPlayer
 import com.storm.lyricraft.data.LyricLine
-import com.storm.lyricraft.ui.components.LyricItemCompose
+import com.storm.lyricraft.ui.components.LyricItemReadOnly
 import com.storm.lyricraft.utils.formatMs
 
 @Composable
 fun RecordTimeScreen(
     lyricList: List<LyricLine>,
-    currentRecordIndex: Int,
+    selectedIndex: Int,
     audioLoaded: Boolean,
     player: ExoPlayer?,
     currentPos: Long,
@@ -34,12 +35,11 @@ fun RecordTimeScreen(
     isPlaying: Boolean,
     onSelectAudio: () -> Unit,
     onShowExport: () -> Unit,
-    onShowPermTip: () -> Unit,
     onPlayPause: () -> Unit,
     onSeek: (Long) -> Unit,
+    onSelectLine: (Int) -> Unit,
     onRecordTime: () -> Unit,
-    onUpdateLyric: (Int, String) -> Unit,
-    onDeleteLyric: (Int) -> Unit
+    onResetTime: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -55,9 +55,6 @@ fun RecordTimeScreen(
             }
             Button(onClick = onShowExport) {
                 Text("导出LRC")
-            }
-            Button(onClick = onShowPermTip) {
-                Text("权限设置")
             }
         }
 
@@ -101,7 +98,7 @@ fun RecordTimeScreen(
                 onClick = onRecordTime,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("记录当前歌曲时间（自动下一行）")
+                Text("记录当前歌曲时间到选中行（自动跳转下一行）")
             }
             Box(modifier = Modifier.padding(vertical = 6.dp))
         } else {
@@ -114,11 +111,12 @@ fun RecordTimeScreen(
                 .fillMaxWidth()
         ) {
             itemsIndexed(lyricList) { index, item ->
-                LyricItemCompose(
+                LyricItemReadOnly(
                     data = item,
-                    isCurrentRecord = index == currentRecordIndex,
-                    onUpdate = { newText -> onUpdateLyric(index, newText) },
-                    onDelete = { onDeleteLyric(index) }
+                    index = index,
+                    isSelected = index == selectedIndex,
+                    onSelect = { onSelectLine(index) },
+                    onResetTime = { onResetTime(index) }
                 )
             }
         }

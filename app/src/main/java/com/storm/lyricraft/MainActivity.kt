@@ -1,12 +1,8 @@
 package com.storm.lyricraft
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.OpenableColumns
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,7 +32,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.storm.lyricraft.data.LyricLine
 import com.storm.lyricraft.ui.components.ExportDialog
 import com.storm.lyricraft.ui.components.FolderPickerDialog
-import com.storm.lyricraft.ui.components.PermissionTipDialog
 import com.storm.lyricraft.ui.navigation.TabPage
 import com.storm.lyricraft.ui.screens.InputTextScreen
 import com.storm.lyricraft.ui.screens.RecordTimeScreen
@@ -52,28 +47,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AppTheme {
-                LyricEditor(openPermSetting = ::jumpPermSetting)
+                LyricEditor()
             }
-        }
-    }
-
-    private fun jumpPermSetting() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                data = Uri.parse("package:$packageName")
-            }
-            startActivity(intent)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LyricEditor(openPermSetting: () -> Unit) {
+fun LyricEditor() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // ============ 播放器状态 ============
+    // 播放器相关
     val playerState = remember { mutableStateOf<ExoPlayer?>(null) }
     val currentPosState = remember { mutableStateOf(0L) }
     val durationState = remember { mutableStateOf(0L) }
@@ -81,29 +67,56 @@ fun LyricEditor(openPermSetting: () -> Unit) {
     val audioLoadedState = remember { mutableStateOf(false) }
     val audioBaseNameState = remember { mutableStateOf("lyric") }
 
-    // ============ 歌词数据 ============
+    // 歌词列表 — 唯一数据源
     val lyricList = remember { mutableStateListOf<LyricLine>() }
-    val currentRecordIndex = remember { mutableStateOf(0) }
+    // 当前选中的行索引
+    val selectedIndex = remember { mutableStateOf(0) }
 
-    // ============ UI 导航 ============
+    // 导航
     val currentTab = remember { mutableStateOf(TabPage.InputText) }
     val rawLyricText = remember { mutableStateOf("") }
 
-    // ============ 导出弹窗状态 ============
+    // 导出
     val showExportDialogState = remember { mutableStateOf(false) }
     val selectedSaveDirState = remember { mutableStateOf<File?>(null) }
     val fileNameInputState = remember { mutableStateOf("lyric.lrc") }
 
-    // ============ 文件夹选择器状态 ============
+    // 文件夹选择器
     val showFolderPickerState = remember { mutableStateOf(false) }
     val currentBrowseDirState = remember { mutableStateOf(Environment.getExternalStorageDirectory()) }
     val dirChildrenState = remember { mutableStateOf(listOf<File>()) }
     val canGoUpState = remember { mutableStateOf(false) }
 
-    // ============ 权限提示弹窗 ============
-    val showPermTipState = remember { mutableStateOf(false) }
+    // ============ 切换到时间页时自动同步歌词 ============
+    LaunchedEffect(currentTab.value) {
+        if (currentTab.value == TabPage.RecordTime && rawLyricText.value.isNotBlank()) {
+            val lines = rawLyricText.value.split("\n")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
 
-    // ============ 加载文件夹列表 ============
+            if (lines.isNotEmpty()) {
+                val newList = lines.mapIndexed { index, text ->
+                    if (index < lyricList.size) {
+                        lyricList[index].copy(text = text)
+                    } else {
+                        LyricLine(timeMs = 0, text = text)
+                    }
+                }
+                // 检测是否有变化
+                val hasChanged = newList.size != lyricList.size ||
+                        newList.zip(lyricList).any { it.first.text != it.second.text }
+
+                if (hasChanged) {
+                    lyricList.clear()
+                    lyricList.addAll(newList)
+                    if (selectedIndex.value >= lyricList.size) {
+                        selectedIndex.value = 0
+                    }
+                }
+            }
+        }
+    }
+
     fun loadFolderList(targetDir: File) {
         scope.launch(Dispatchers.IO) {
             val list = targetDir.listFiles()
@@ -119,7 +132,6 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         }
     }
 
-    // ============ 导出 LRC ============
     fun saveLrcToFolder() {
         val saveDir = selectedSaveDirState.value
         val fileName = fileNameInputState.value.trim()
@@ -154,7 +166,6 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         }
     }
 
-    // ============ 音频选择器 ============
     val audioPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         playerState.value?.release()
@@ -176,12 +187,10 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         audioLoadedState.value = true
     }
 
-    // ============ 生命周期：释放播放器 ============
     DisposableEffect(Unit) {
         onDispose { playerState.value?.release() }
     }
 
-    // ============ 进度轮询 ============
     LaunchedEffect(playerState.value) {
         while (true) {
             val p = playerState.value ?: break
@@ -192,43 +201,83 @@ fun LyricEditor(openPermSetting: () -> Unit) {
         }
     }
 
-    // ============ 文件夹弹窗自动刷新 ============
     LaunchedEffect(showFolderPickerState.value) {
         if (showFolderPickerState.value) {
             loadFolderList(currentBrowseDirState.value)
         }
     }
 
-    // ============ 解析歌词 ============
-    fun parseRawLyric() {
-        val lines = rawLyricText.value.split("\n")
+    // 导入歌词（初始化列表）
+    fun importLyrics(text: String) {
+        val lines = text.split("\n")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
-        lyricList.clear()
-        lines.forEach { text ->
-            lyricList.add(LyricLine(timeMs = 0, text = text))
+
+        if (lines.isEmpty()) {
+            Toast.makeText(context, "请先粘贴歌词", Toast.LENGTH_SHORT).show()
+            return
         }
-        currentRecordIndex.value = 0
+
+        val newList = lines.mapIndexed { index, line ->
+            if (index < lyricList.size) {
+                lyricList[index].copy(text = line)
+            } else {
+                LyricLine(timeMs = 0, text = line)
+            }
+        }
+
+        lyricList.clear()
+        lyricList.addAll(newList)
+        selectedIndex.value = 0
         Toast.makeText(context, "已导入${lines.size}行歌词", Toast.LENGTH_SHORT).show()
         currentTab.value = TabPage.RecordTime
     }
 
-    // ============ 时间打点 ============
+    // 清除时间戳
+    fun resetLyricTime(index: Int) {
+        if (index in lyricList.indices) {
+            val current = lyricList[index]
+            if (current.timeMs == 0L) return
+            lyricList[index] = current.copy(timeMs = 0)
+        }
+    }
+
+    // 记录当前时间到选中行，自动跳转下一行
     fun recordCurrentTime() {
         if (lyricList.isEmpty()) {
             Toast.makeText(context, "请先导入歌词", Toast.LENGTH_SHORT).show()
             return
         }
-        val idx = currentRecordIndex.value
-        if (idx >= lyricList.size) {
-            Toast.makeText(context, "全部歌词打点完成", Toast.LENGTH_SHORT).show()
+
+        val idx = selectedIndex.value
+        if (idx !in lyricList.indices) {
+            Toast.makeText(context, "请选中一行歌词", Toast.LENGTH_SHORT).show()
             return
         }
+
         lyricList[idx] = lyricList[idx].copy(timeMs = currentPosState.value)
-        currentRecordIndex.value = idx + 1
+
+        val nextIndex = idx + 1
+        if (nextIndex < lyricList.size) {
+            selectedIndex.value = nextIndex
+        } else {
+            Toast.makeText(context, "全部歌词打点完成", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    // ============ UI ============
+    // 选中某行并跳转音频
+    fun selectLyricLine(index: Int) {
+        if (index !in lyricList.indices) return
+
+        val targetTime = lyricList[index].timeMs
+        if (targetTime > 0) {
+            playerState.value?.seekTo(targetTime)
+            currentPosState.value = targetTime
+        }
+
+        selectedIndex.value = index
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -267,13 +316,12 @@ fun LyricEditor(openPermSetting: () -> Unit) {
                 when (currentTab.value) {
                     TabPage.InputText -> InputTextScreen(
                         rawLyricText = rawLyricText.value,
-                        onTextChange = { rawLyricText.value = it },
-                        onParse = ::parseRawLyric
+                        onTextChange = { rawLyricText.value = it }
                     )
 
                     TabPage.RecordTime -> RecordTimeScreen(
                         lyricList = lyricList,
-                        currentRecordIndex = currentRecordIndex.value,
+                        selectedIndex = selectedIndex.value,
                         audioLoaded = audioLoadedState.value,
                         player = playerState.value,
                         currentPos = currentPosState.value,
@@ -284,7 +332,6 @@ fun LyricEditor(openPermSetting: () -> Unit) {
                             fileNameInputState.value = "${audioBaseNameState.value}.lrc"
                             showExportDialogState.value = true
                         },
-                        onShowPermTip = { showPermTipState.value = true },
                         onPlayPause = {
                             if (isPlayingState.value) playerState.value?.pause()
                             else playerState.value?.play()
@@ -293,13 +340,9 @@ fun LyricEditor(openPermSetting: () -> Unit) {
                             playerState.value?.seekTo(pos)
                             currentPosState.value = pos
                         },
+                        onSelectLine = ::selectLyricLine,
                         onRecordTime = ::recordCurrentTime,
-                        onUpdateLyric = { index, newText ->
-                            lyricList[index] = lyricList[index].copy(text = newText)
-                        },
-                        onDeleteLyric = { index ->
-                            lyricList.removeAt(index)
-                        }
+                        onResetTime = ::resetLyricTime
                     )
 
                     TabPage.Setting -> SettingScreen()
@@ -307,7 +350,6 @@ fun LyricEditor(openPermSetting: () -> Unit) {
             }
         }
 
-        // ============ 弹窗 ============
         ExportDialog(
             show = showExportDialogState.value,
             selectedSaveDir = selectedSaveDirState.value,
@@ -332,15 +374,6 @@ fun LyricEditor(openPermSetting: () -> Unit) {
                 showFolderPickerState.value = false
             },
             onDismiss = { showFolderPickerState.value = false }
-        )
-
-        PermissionTipDialog(
-            show = showPermTipState.value,
-            onConfirm = {
-                openPermSetting()
-                showPermTipState.value = false
-            },
-            onDismiss = { showPermTipState.value = false }
         )
     }
 }
