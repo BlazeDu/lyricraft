@@ -1,3 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Lyricraft</string>
+    <!-- 底部导航 -->
+    <string name="nav_lyrics">Lyrics</string>
+    <string name="nav_time">Time</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- 歌词页 -->
+    <string name="lyrics_title">Paste lyrics (one line per sentence)</string>
+    <string name="lyrics_placeholder">Paste your lyrics here</string>
+
+    <!-- 时间页 -->
+    <string name="time_select_audio">Select Audio</string>
+    <string name="time_export_lrc">Export LRC</string>
+    <string name="time_play">Play</string>
+    <string name="time_pause">Pause</string>
+    <string name="time_record_btn">Record Current Time (auto-next)</string>
+    <string name="time_no_audio">Please select audio first</string>
+    <string name="time_clear">Clear</string>
+    <string name="time_empty_lyric">(empty)</string>
+    <string name="time_clear_toast">Cleared, jumped to previous line</string>
+    <string name="time_please_select">Please select a lyric line</string>
+    <string name="time_all_done">All lyrics tagged</string>
+
+    <!-- 设置页 -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">Follow System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_dialog_title">Select Theme</string>
+    <string name="settings_permissions">Permissions</string>
+    <string name="settings_permission_storage">Storage Permission</string>
+    <string name="settings_permission_granted">Granted</string>
+    <string name="settings_permission_denied">Denied</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_developer">Developer</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_chinese">中文</string>
+    <string name="settings_language_follow_system">Follow System</string>
+    <string name="settings_language_dialog_title">Select Language</string>
+
+    <!-- 导出弹窗 -->
+    <string name="dialog_export_title">Export LRC</string>
+    <string name="dialog_export_save_dir">Save Directory</string>
+    <string name="dialog_export_select_dir">Select Dir</string>
+    <string name="dialog_export_filename">File Name</string>
+    <string name="dialog_export_confirm">Confirm Export</string>
+    <string name="dialog_export_cancel">Cancel</string>
+    <string name="dialog_export_success">Export successful</string>
+    <string name="dialog_export_failed">Export failed: %s</string>
+    <string name="dialog_export_dir_empty">Save directory cannot be empty</string>
+    <string name="dialog_export_name_empty">File name cannot be empty</string>
+
+    <!-- 文件夹弹窗 -->
+    <string name="dialog_folder_title">Select Save Folder</string>
+    <string name="dialog_folder_current">Current directory:</string>
+    <string name="dialog_folder_confirm">Use this folder</string>
+
+    <!-- 权限弹窗 -->
+    <string name="dialog_permission_title">Storage Permission Required</string>
+    <string name="dialog_permission_message">Grant "All Files Access" permission to save LRC files to your chosen folder.</string>
+    <string name="dialog_permission_confirm">Go to Settings</string>
+    <string name="dialog_permission_dismiss">Later</string>
+
+    <!-- Toast -->
+    <string name="toast_permission_required">Please grant all files access permission first</string>
+    <string name="toast_import_first">Please import lyrics first</string>
+    <string name="toast_paste_first">Please paste lyrics first</string>
+    <string name="lyrics_import_toast">Imported %d lines</string>
 </resources>

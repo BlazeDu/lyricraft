@@ -17,7 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.storm.lyricraft.R
 import java.io.File
 
 @Composable
@@ -33,31 +35,31 @@ fun ExportDialog(
     if (!show) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("导出") },
+        title = { Text(stringResource(R.string.dialog_export_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         modifier = Modifier.weight(1f),
-                        value = selectedSaveDir?.absolutePath ?: "未选择文件夹",
+                        value = selectedSaveDir?.absolutePath ?: stringResource(R.string.dialog_export_select_dir),
                         onValueChange = {},
                         enabled = false,
-                        label = { Text("保存目录") }
+                        label = { Text(stringResource(R.string.dialog_export_save_dir)) }
                     )
                     Button(modifier = Modifier.padding(start = 8.dp), onClick = onSelectDir) {
-                        Text("选择目录")
+                        Text(stringResource(R.string.dialog_export_select_dir))
                     }
                 }
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
                     value = fileNameInput,
                     onValueChange = onFileNameChange,
-                    label = { Text("文件名") }
+                    label = { Text(stringResource(R.string.dialog_export_filename)) }
                 )
             }
         },
-        confirmButton = { Button(onClick = onConfirm) { Text("确认导出") } },
-        dismissButton = { Button(onClick = onDismiss) { Text("取消") } }
+        confirmButton = { Button(onClick = onConfirm) { Text(stringResource(R.string.dialog_export_confirm)) } },
+        dismissButton = { Button(onClick = onDismiss) { Text(stringResource(R.string.dialog_export_cancel)) } }
     )
 }
 
@@ -75,10 +77,13 @@ fun FolderPickerDialog(
     if (!show) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("选择保存文件夹") },
+        title = { Text(stringResource(R.string.dialog_folder_title)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text("当前目录：${currentDir.absolutePath}", modifier = Modifier.padding(bottom = 8.dp))
+                Text(
+                    text = "${stringResource(R.string.dialog_folder_current)} ${currentDir.absolutePath}",
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
                 HorizontalDivider(modifier = Modifier.padding(bottom = 6.dp))
                 if (canGoUp) {
                     Text(
@@ -108,12 +113,12 @@ fun FolderPickerDialog(
         },
         confirmButton = {
             Button(onClick = onConfirm) {
-                Text("选用此文件夹")
+                Text(stringResource(R.string.dialog_folder_confirm))
             }
         },
         dismissButton = {
             Button(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.dialog_export_cancel))
             }
         }
     )
@@ -128,13 +133,13 @@ fun PermissionTipDialog(
     if (!show) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("需要文件权限") },
-        text = { Text("需要授予【所有文件访问权限】才能浏览并选择文件夹保存 LRC 文件。") },
+        title = { Text(stringResource(R.string.dialog_permission_title)) },
+        text = { Text(stringResource(R.string.dialog_permission_message)) },
         confirmButton = {
             Button(onClick = onConfirm) {
-                Text("前往设置开启")
+                Text(stringResource(R.string.dialog_permission_confirm))
             }
         },
-        dismissButton = { Button(onClick = onDismiss) { Text("稍后") } }
+        dismissButton = { Button(onClick = onDismiss) { Text(stringResource(R.string.dialog_permission_dismiss)) } }
     )
 }

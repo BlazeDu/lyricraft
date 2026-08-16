@@ -7,9 +7,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.OpenableColumns
 import android.provider.Settings
-import android.view.View
-import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -27,6 +24,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,10 +33,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import com.storm.lyricraft.R
 import com.storm.lyricraft.data.LyricLine
 import com.storm.lyricraft.ui.components.ExportDialog
 import com.storm.lyricraft.ui.components.FolderPickerDialog
@@ -47,6 +48,7 @@ import com.storm.lyricraft.ui.screens.InputTextScreen
 import com.storm.lyricraft.ui.screens.RecordTimeScreen
 import com.storm.lyricraft.ui.screens.SettingScreen
 import com.storm.lyricraft.ui.theme.AppTheme
+import com.storm.lyricraft.utils.LocaleManager
 import com.storm.lyricraft.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -56,6 +58,7 @@ import java.io.File
 class MainActivity : ComponentActivity() {
 
     private lateinit var themeManager: ThemeManager
+    private lateinit var localeManager: LocaleManager
 
     private fun jumpPermSetting() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -66,28 +69,38 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        val localeManager = LocaleManager(newBase)
+        val context = localeManager.applyLanguage(newBase)
+        super.attachBaseContext(context)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         themeManager = ThemeManager(this)
-        val savedTheme = themeManager.getTheme()
+        localeManager = LocaleManager(this)
 
-        // 设置状态栏和导航栏为透明，颜色由 Theme 控制
-        window.apply {
-            statusBarColor = android.graphics.Color.TRANSPARENT
-            navigationBarColor = android.graphics.Color.TRANSPARENT
-        }
+        val savedTheme = themeManager.getTheme()
+        val savedLanguage = localeManager.getLanguage()
 
         setContent {
             val currentTheme = rememberSaveable { mutableStateOf(savedTheme) }
+            val currentLanguage = rememberSaveable { mutableStateOf(savedLanguage) }
 
             AppTheme(themeMode = currentTheme.value) {
                 LyricEditor(
                     openPermSetting = ::jumpPermSetting,
                     themeManager = themeManager,
+                    localeManager = localeManager,
                     initialTheme = savedTheme,
+                    initialLanguage = savedLanguage,
                     onThemeChanged = { newTheme ->
                         currentTheme.value = newTheme
+                    },
+                    onLanguageChanged = { newLang ->
+                        currentLanguage.value = newLang
+                        recreate()
                     }
                 )
             }
@@ -100,20 +113,22 @@ class MainActivity : ComponentActivity() {
 fun LyricEditor(
     openPermSetting: () -> Unit,
     themeManager: ThemeManager,
+    localeManager: LocaleManager,
     initialTheme: String,
-    onThemeChanged: (String) -> Unit
+    initialLanguage: String,
+    onThemeChanged: (String) -> Unit,
+    onLanguageChanged: (String) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // ============ 可序列化状态（rememberSaveable） ============
-    val currentPosState = rememberSaveable { mutableStateOf(0L) }
-    val durationState = rememberSaveable { mutableStateOf(0L) }
+    val currentPosState = rememberSaveable { mutableLongStateOf(0L) }
+    val durationState = rememberSaveable { mutableLongStateOf(0L) }
     val isPlayingState = rememberSaveable { mutableStateOf(false) }
     val audioLoadedState = rememberSaveable { mutableStateOf(false) }
     val audioBaseNameState = rememberSaveable { mutableStateOf("lyric") }
 
-    val selectedIndex = rememberSaveable { mutableStateOf(0) }
+    val selectedIndex = rememberSaveable { mutableIntStateOf(0) }
     val currentTab = rememberSaveable { mutableStateOf(TabPage.InputText) }
     val rawLyricText = rememberSaveable { mutableStateOf("") }
 
@@ -131,8 +146,8 @@ fun LyricEditor(
         )
     }
     val themeMode = rememberSaveable { mutableStateOf(initialTheme) }
+    val languageMode = rememberSaveable { mutableStateOf(initialLanguage) }
 
-    // ============ 不可序列化状态（remember） ============
     val lyricList = remember { mutableStateListOf<LyricLine>() }
     val playerState = remember { mutableStateOf<ExoPlayer?>(null) }
     val selectedSaveDirState = remember { mutableStateOf<File?>(null) }
@@ -140,7 +155,6 @@ fun LyricEditor(
     val dirChildrenState = remember { mutableStateOf(listOf<File>()) }
     val canGoUpState = remember { mutableStateOf(false) }
 
-    // ============ 启动时自动检测权限 ============
     LaunchedEffect(Unit) {
         delay(500)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
@@ -148,7 +162,6 @@ fun LyricEditor(
         }
     }
 
-    // ============ 切换到时间页时自动同步歌词 ============
     LaunchedEffect(currentTab.value) {
         if (currentTab.value == TabPage.RecordTime && rawLyricText.value.isNotBlank()) {
             val lines = rawLyricText.value.split("\n")
@@ -170,14 +183,13 @@ fun LyricEditor(
                     lyricList.clear()
                     lyricList.addAll(newList)
                     if (selectedIndex.value >= lyricList.size) {
-                        selectedIndex.value = 0
+                        selectedIndex.intValue = 0
                     }
                 }
             }
         }
     }
 
-    // ============ 每次回到设置页刷新权限状态 ============
     LaunchedEffect(currentTab.value) {
         if (currentTab.value == TabPage.Setting) {
             hasStoragePermission.value = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -205,7 +217,7 @@ fun LyricEditor(
 
     fun saveLrcToFolder() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
-            Toast.makeText(context, "请先授予全部文件访问权限", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.toast_permission_required), Toast.LENGTH_SHORT).show()
             showPermTipState.value = true
             return
         }
@@ -213,11 +225,11 @@ fun LyricEditor(
         val saveDir = selectedSaveDirState.value
         val fileName = fileNameInputState.value.trim()
         if (saveDir == null) {
-            Toast.makeText(context, "保存目录不能为空", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.dialog_export_dir_empty), Toast.LENGTH_SHORT).show()
             return
         }
         if (fileName.isBlank()) {
-            Toast.makeText(context, "文件名不能为空", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.dialog_export_name_empty), Toast.LENGTH_SHORT).show()
             return
         }
         val realName = if (fileName.endsWith(".lrc")) fileName else "$fileName.lrc"
@@ -231,13 +243,12 @@ fun LyricEditor(
                 }
                 java.io.FileOutputStream(saveFile).bufferedWriter().use { it.write(content) }
                 scope.launch(Dispatchers.Main) {
-                    Toast.makeText(context, "导出成功", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.dialog_export_success), Toast.LENGTH_SHORT).show()
                     showExportDialogState.value = false
                 }
-            } catch (e: Exception) {
-                val errMsg = e.message ?: "未知错误"
+            } catch (_: Exception) {
                 scope.launch(Dispatchers.Main) {
-                    Toast.makeText(context, "导出失败:$errMsg", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, context.getString(R.string.dialog_export_failed, "未知错误"), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -271,8 +282,8 @@ fun LyricEditor(
     LaunchedEffect(playerState.value) {
         while (true) {
             val p = playerState.value ?: break
-            currentPosState.value = p.currentPosition
-            durationState.value = p.duration
+            currentPosState.longValue = p.currentPosition
+            durationState.longValue = p.duration
             isPlayingState.value = p.isPlaying
             delay(100)
         }
@@ -290,7 +301,7 @@ fun LyricEditor(
             .filter { it.isNotEmpty() }
 
         if (lines.isEmpty()) {
-            Toast.makeText(context, "请先粘贴歌词", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.toast_paste_first), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -304,8 +315,8 @@ fun LyricEditor(
 
         lyricList.clear()
         lyricList.addAll(newList)
-        selectedIndex.value = 0
-        Toast.makeText(context, "已导入${lines.size}行歌词", Toast.LENGTH_SHORT).show()
+        selectedIndex.intValue = 0
+        Toast.makeText(context, context.getString(R.string.lyrics_import_toast, lines.size), Toast.LENGTH_SHORT).show()
         currentTab.value = TabPage.RecordTime
     }
 
@@ -316,7 +327,7 @@ fun LyricEditor(
         if (current.timeMs == 0L) return
 
         lyricList[index] = current.copy(timeMs = 0)
-        selectedIndex.value = index
+        selectedIndex.intValue = index
 
         val prevIndex = index - 1
         val targetTime = if (prevIndex >= 0 && lyricList[prevIndex].timeMs > 0) {
@@ -326,30 +337,30 @@ fun LyricEditor(
         }
 
         playerState.value?.seekTo(targetTime)
-        currentPosState.value = targetTime
+        currentPosState.longValue = targetTime
 
-        Toast.makeText(context, "已清除，跳转到上一行", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.time_clear_toast), Toast.LENGTH_SHORT).show()
     }
 
     fun recordCurrentTime() {
         if (lyricList.isEmpty()) {
-            Toast.makeText(context, "请先导入歌词", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.toast_import_first), Toast.LENGTH_SHORT).show()
             return
         }
 
-        val idx = selectedIndex.value
+        val idx = selectedIndex.intValue
         if (idx !in lyricList.indices) {
-            Toast.makeText(context, "请选中一行歌词", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.time_please_select), Toast.LENGTH_SHORT).show()
             return
         }
 
-        lyricList[idx] = lyricList[idx].copy(timeMs = currentPosState.value)
+        lyricList[idx] = lyricList[idx].copy(timeMs = currentPosState.longValue)
 
         val nextIndex = idx + 1
         if (nextIndex < lyricList.size) {
-            selectedIndex.value = nextIndex
+            selectedIndex.intValue = nextIndex
         } else {
-            Toast.makeText(context, "全部歌词打点完成", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.time_all_done), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -359,10 +370,10 @@ fun LyricEditor(
         val targetTime = lyricList[index].timeMs
         if (targetTime > 0) {
             playerState.value?.seekTo(targetTime)
-            currentPosState.value = targetTime
+            currentPosState.longValue = targetTime
         }
 
-        selectedIndex.value = index
+        selectedIndex.intValue = index
     }
 
     Scaffold(
@@ -376,19 +387,19 @@ fun LyricEditor(
                 NavigationBarItem(
                     selected = currentTab.value == TabPage.InputText,
                     onClick = { currentTab.value = TabPage.InputText },
-                    label = { Text("歌词", fontSize = 14.dp.value.sp) },
+                    label = { Text(stringResource(R.string.nav_lyrics), fontSize = 14.sp) },
                     icon = {}
                 )
                 NavigationBarItem(
                     selected = currentTab.value == TabPage.RecordTime,
                     onClick = { currentTab.value = TabPage.RecordTime },
-                    label = { Text("时间", fontSize = 14.dp.value.sp) },
+                    label = { Text(stringResource(R.string.nav_time), fontSize = 14.sp) },
                     icon = {}
                 )
                 NavigationBarItem(
                     selected = currentTab.value == TabPage.Setting,
                     onClick = { currentTab.value = TabPage.Setting },
-                    label = { Text("设置", fontSize = 14.dp.value.sp) },
+                    label = { Text(stringResource(R.string.nav_settings), fontSize = 14.sp) },
                     icon = {}
                 )
             }
@@ -409,11 +420,11 @@ fun LyricEditor(
 
                     TabPage.RecordTime -> RecordTimeScreen(
                         lyricList = lyricList,
-                        selectedIndex = selectedIndex.value,
+                        selectedIndex = selectedIndex.intValue,
                         audioLoaded = audioLoadedState.value,
                         player = playerState.value,
-                        currentPos = currentPosState.value,
-                        duration = durationState.value,
+                        currentPos = currentPosState.longValue,
+                        duration = durationState.longValue,
                         isPlaying = isPlayingState.value,
                         onSelectAudio = { audioPicker.launch("audio/*") },
                         onShowExport = {
@@ -426,7 +437,7 @@ fun LyricEditor(
                         },
                         onSeek = { pos ->
                             playerState.value?.seekTo(pos)
-                            currentPosState.value = pos
+                            currentPosState.longValue = pos
                         },
                         onSelectLine = ::selectLyricLine,
                         onRecordTime = ::recordCurrentTime,
@@ -437,10 +448,16 @@ fun LyricEditor(
                         hasStoragePermission = hasStoragePermission.value,
                         appVersion = getAppVersion(context),
                         currentTheme = themeMode.value,
+                        currentLanguage = languageMode.value,
                         onThemeSelected = { selectedTheme ->
                             themeMode.value = selectedTheme
                             themeManager.saveTheme(selectedTheme)
                             onThemeChanged(selectedTheme)
+                        },
+                        onLanguageSelected = { selectedLanguage ->
+                            languageMode.value = selectedLanguage
+                            localeManager.saveLanguage(selectedLanguage)
+                            onLanguageChanged(selectedLanguage)
                         },
                         onOpenPermSetting = openPermSetting,
                         onOpenGitHub = {
@@ -493,7 +510,7 @@ fun getAppVersion(context: android.content.Context): String {
     return try {
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
         packageInfo.versionName ?: "1.0.0"
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         "1.0.0"
     }
 }

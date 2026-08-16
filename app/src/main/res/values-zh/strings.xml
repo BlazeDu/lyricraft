@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 底部导航 -->
+    <string name="nav_lyrics">歌词</string>
+    <string name="nav_time">时间</string>
+    <string name="nav_settings">设置</string>
+
+    <!-- 歌词页 -->
+    <string name="lyrics_title">粘贴全部歌词（自动按换行分割每行）</string>
+    <string name="lyrics_placeholder">在这里粘贴完整歌词</string>
+
+    <!-- 时间页 -->
+    <string name="time_select_audio">选择音频</string>
+    <string name="time_export_lrc">导出 LRC</string>
+    <string name="time_play">播放</string>
+    <string name="time_pause">暂停</string>
+    <string name="time_record_btn">记录当前歌曲时间到选中行（自动跳转下一行）</string>
+    <string name="time_no_audio">请先选择音频</string>
+    <string name="time_clear">清除</string>
+    <string name="time_empty_lyric">(空)</string>
+    <string name="time_clear_toast">已清除，跳转到上一行</string>
+    <string name="time_please_select">请选中一行歌词</string>
+    <string name="time_all_done">全部歌词打点完成</string>
+
+    <!-- 设置页 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">浅色模式</string>
+    <string name="settings_theme_dark">深色模式</string>
+    <string name="settings_theme_dialog_title">选择主题</string>
+    <string name="settings_permissions">权限</string>
+    <string name="settings_permission_storage">文件管理权限</string>
+    <string name="settings_permission_granted">已授予</string>
+    <string name="settings_permission_denied">未授予</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">版本号</string>
+    <string name="settings_developer">开发者</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_chinese">中文</string>
+    <string name="settings_language_follow_system">跟随系统</string>
+    <string name="settings_language_dialog_title">选择语言</string>
+
+    <!-- 导出弹窗 -->
+    <string name="dialog_export_title">导出 LRC</string>
+    <string name="dialog_export_save_dir">保存目录</string>
+    <string name="dialog_export_select_dir">选择目录</string>
+    <string name="dialog_export_filename">文件名</string>
+    <string name="dialog_export_confirm">确认导出</string>
+    <string name="dialog_export_cancel">取消</string>
+    <string name="dialog_export_success">导出成功</string>
+    <string name="dialog_export_failed">导出失败：%s</string>
+    <string name="dialog_export_dir_empty">保存目录不能为空</string>
+    <string name="dialog_export_name_empty">文件名不能为空</string>
+
+    <!-- 文件夹弹窗 -->
+    <string name="dialog_folder_title">选择保存文件夹</string>
+    <string name="dialog_folder_current">当前目录：</string>
+    <string name="dialog_folder_confirm">选用此文件夹</string>
+
+    <!-- 权限弹窗 -->
+    <string name="dialog_permission_title">需要文件权限</string>
+    <string name="dialog_permission_message">需要授予【所有文件访问权限】才能浏览并选择文件夹保存 LRC 文件。</string>
+    <string name="dialog_permission_confirm">前往设置开启</string>
+    <string name="dialog_permission_dismiss">稍后</string>
+
+    <!-- Toast -->
+    <string name="toast_permission_required">请先授予全部文件访问权限</string>
+    <string name="toast_import_first">请先导入歌词</string>
+    <string name="toast_paste_first">请先粘贴歌词</string>
+    <string name="lyrics_import_toast">已导入 %d 行歌词</string>
+</resources>

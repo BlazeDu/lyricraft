@@ -12,7 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.storm.lyricraft.R
 import com.storm.lyricraft.data.LyricLine
 
 @Composable
@@ -47,7 +49,7 @@ fun LyricItemReadOnly(
         )
 
         Text(
-            text = data.text.ifEmpty { "(空)" },
+            text = data.text.ifEmpty { stringResource(R.string.time_empty_lyric) },
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .weight(1f)
@@ -58,7 +60,7 @@ fun LyricItemReadOnly(
             onClick = onResetTime,
             modifier = Modifier.padding(horizontal = 4.dp)
         ) {
-            Text("清除")
+            Text(stringResource(R.string.time_clear))
         }
     }
 }

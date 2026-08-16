@@ -13,7 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.storm.lyricraft.R
 
 @Composable
 fun InputTextScreen(
@@ -27,11 +29,10 @@ fun InputTextScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "粘贴全部歌词（自动按换行分割每行）",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp, bottom = 8.dp),
-            color = MaterialTheme.colorScheme.onBackground
+            text = stringResource(R.string.lyrics_title),
+            modifier = Modifier.padding(bottom = 8.dp),
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.bodyMedium
         )
 
         TextField(
@@ -40,7 +41,7 @@ fun InputTextScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            placeholder = { Text("在这里粘贴完整歌词，每一行会自动生成一条歌词记录") },
+            placeholder = { Text(stringResource(R.string.lyrics_placeholder)) },
             maxLines = Int.MAX_VALUE,
             shape = RoundedCornerShape(16.dp),
             colors = TextFieldDefaults.colors(
@@ -49,11 +50,7 @@ fun InputTextScreen(
                 disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                disabledIndicatorColor = Color.Transparent
             )
         )
     }

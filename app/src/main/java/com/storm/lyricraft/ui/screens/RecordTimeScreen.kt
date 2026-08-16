@@ -17,8 +17,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.ExoPlayer
+import com.storm.lyricraft.R
 import com.storm.lyricraft.data.LyricLine
 import com.storm.lyricraft.ui.components.LyricItemReadOnly
 import com.storm.lyricraft.utils.formatMs
@@ -50,10 +52,10 @@ fun RecordTimeScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(onClick = onSelectAudio) {
-                Text("选择音频")
+                Text(stringResource(R.string.time_select_audio))
             }
             Button(onClick = onShowExport) {
-                Text("导出LRC")
+                Text(stringResource(R.string.time_export_lrc))
             }
         }
 
@@ -65,7 +67,7 @@ fun RecordTimeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(onClick = onPlayPause) {
-                    Text(if (isPlaying) "暂停" else "播放")
+                    Text(if (isPlaying) stringResource(R.string.time_pause) else stringResource(R.string.time_play))
                 }
                 Column(
                     modifier = Modifier
@@ -97,11 +99,11 @@ fun RecordTimeScreen(
                 onClick = onRecordTime,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("记录当前歌曲时间到选中行（自动跳转下一行）")
+                Text(stringResource(R.string.time_record_btn))
             }
             Box(modifier = Modifier.padding(vertical = 6.dp))
         } else {
-            Text("请先选择音频", modifier = Modifier.padding(vertical = 10.dp))
+            Text(stringResource(R.string.time_no_audio), modifier = Modifier.padding(vertical = 10.dp))
         }
 
         LazyColumn(
