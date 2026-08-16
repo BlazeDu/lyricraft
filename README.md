@@ -25,12 +25,14 @@ This is a **fully offline, local-first** application — no internet connection 
 | 📝 Lyrics Import | Paste multi-line plain text, automatically split by newlines |
 | 🎵 Audio Loading | Load local audio files with ExoPlayer — play, pause, seek |
 | ⏱️ Time Tagging | One-tap timestamp recording while playing, auto-advance to next line |
-| ✏️ Real-time Editing | Modify or delete individual lyric lines |
+| ✏️ Real-time Editing | Modify lyric text in the Lyrics tab, changes sync to Time tab instantly |
+| 🎯 Click to Jump | Click any lyric line to seek audio to its timestamp |
 | 💾 LRC Export | Custom save path and filename, generate standard `.lrc` files |
 | 📂 File Browser | Built-in folder picker with directory navigation |
 | 🔐 Permission Handling | Full support for Android 11+ scoped storage |
+| 🎨 Theme Switching | Manual dark/light/system theme toggle in Settings |
 | 🌓 Dark Mode | Auto-switch between Material 3 light/dark themes |
-| 📱 Bottom Navigation | Three tabs: Input Text / Record Time / Settings |
+| 📱 Bottom Navigation | Three tabs: Lyrics / Record Time / Settings |
 
 ## 🛠️ Technology Stack
 
@@ -66,11 +68,12 @@ app/src/main/java/com/storm/lyricraft/
 │   │   ├── LyricItem.kt           # Single lyric row component
 │   │   └── Dialogs.kt             # Export / Folder / Permission dialogs
 │   └── screens/
-│       ├── InputTextScreen.kt     # Text import page
+│       ├── InputTextScreen.kt     # Lyrics import page
 │       ├── RecordTimeScreen.kt    # Time tagging page (core)
 │       └── SettingScreen.kt       # Settings page
 └── utils/
-    └── TimeUtils.kt               # LRC time formatting
+    ├── TimeUtils.kt               # LRC time formatting
+    └── ThemeManager.kt            # Theme preference management
 ```
 
 ## 🚀 Quick Start
@@ -98,10 +101,11 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 
 ## 📱 How to Use
 
-1. **Import Lyrics** — Switch to the **"Text"** tab, paste your plain-text lyrics (one line per sentence), tap **"Import & Go to Tagging"**.
+1. **Import Lyrics** — Switch to the **"Lyrics"** tab, paste your plain-text lyrics (one line per sentence), tap **"Import & Go to Tagging"**.
 2. **Load Audio** — Go to the **"Time"** tab, tap **"Select Audio"** and choose a local audio file.
 3. **Tag Timestamps** — Tap **"Play"** to start playback. At each lyric line, tap **"Record Current Time"** — the timestamp is saved and the next line is auto-selected.
-4. **Export LRC** — Tap **"Export LRC"**, choose a save folder and filename, then confirm to generate the `.lrc` file.
+4. **Select & Jump** — Click any lyric line to select it and seek audio to its timestamp.
+5. **Export LRC** — Tap **"Export LRC"**, choose a save folder and filename, then confirm to generate the `.lrc` file.
 
 ## ⏱️ Time Format
 
@@ -127,7 +131,6 @@ Timestamps follow the standard LRC format: `[MM:SS.cc]`, for example:
 
 - [ ] Import and edit existing `.lrc` files
 - [ ] Batch time adjustment / global offset
-- [ ] Custom theme and font size settings
 - [ ] Lyrics preview with real-time highlight sync
 - [ ] Undo / Redo support
 - [ ] Batch delete lyrics
