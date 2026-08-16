@@ -118,3 +118,23 @@ fun FolderPickerDialog(
         }
     )
 }
+
+@Composable
+fun PermissionTipDialog(
+    show: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (!show) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("需要文件权限") },
+        text = { Text("需要授予【所有文件访问权限】才能浏览并选择文件夹保存 LRC 文件。") },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text("前往设置开启")
+            }
+        },
+        dismissButton = { Button(onClick = onDismiss) { Text("稍后") } }
+    )
+}

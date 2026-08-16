@@ -1,8 +1,15 @@
 package com.storm.lyricraft
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.OpenableColumns
+import android.provider.Settings
+import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,30 +31,65 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import com.storm.lyricraft.data.LyricLine
 import com.storm.lyricraft.ui.components.ExportDialog
 import com.storm.lyricraft.ui.components.FolderPickerDialog
+import com.storm.lyricraft.ui.components.PermissionTipDialog
 import com.storm.lyricraft.ui.navigation.TabPage
 import com.storm.lyricraft.ui.screens.InputTextScreen
 import com.storm.lyricraft.ui.screens.RecordTimeScreen
 import com.storm.lyricraft.ui.screens.SettingScreen
 import com.storm.lyricraft.ui.theme.AppTheme
+import com.storm.lyricraft.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var themeManager: ThemeManager
+
+    private fun jumpPermSetting() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            startActivity(intent)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        themeManager = ThemeManager(this)
+        val savedTheme = themeManager.getTheme()
+
+        // 设置状态栏和导航栏为透明，颜色由 Theme 控制
+        window.apply {
+            statusBarColor = android.graphics.Color.TRANSPARENT
+            navigationBarColor = android.graphics.Color.TRANSPARENT
+        }
+
         setContent {
-            AppTheme {
-                LyricEditor()
+            val currentTheme = rememberSaveable { mutableStateOf(savedTheme) }
+
+            AppTheme(themeMode = currentTheme.value) {
+                LyricEditor(
+                    openPermSetting = ::jumpPermSetting,
+                    themeManager = themeManager,
+                    initialTheme = savedTheme,
+                    onThemeChanged = { newTheme ->
+                        currentTheme.value = newTheme
+                    }
+                )
             }
         }
     }
@@ -55,37 +97,56 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LyricEditor() {
+fun LyricEditor(
+    openPermSetting: () -> Unit,
+    themeManager: ThemeManager,
+    initialTheme: String,
+    onThemeChanged: (String) -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // 播放器相关
-    val playerState = remember { mutableStateOf<ExoPlayer?>(null) }
-    val currentPosState = remember { mutableStateOf(0L) }
-    val durationState = remember { mutableStateOf(0L) }
-    val isPlayingState = remember { mutableStateOf(false) }
-    val audioLoadedState = remember { mutableStateOf(false) }
-    val audioBaseNameState = remember { mutableStateOf("lyric") }
+    // ============ 可序列化状态（rememberSaveable） ============
+    val currentPosState = rememberSaveable { mutableStateOf(0L) }
+    val durationState = rememberSaveable { mutableStateOf(0L) }
+    val isPlayingState = rememberSaveable { mutableStateOf(false) }
+    val audioLoadedState = rememberSaveable { mutableStateOf(false) }
+    val audioBaseNameState = rememberSaveable { mutableStateOf("lyric") }
 
-    // 歌词列表 — 唯一数据源
+    val selectedIndex = rememberSaveable { mutableStateOf(0) }
+    val currentTab = rememberSaveable { mutableStateOf(TabPage.InputText) }
+    val rawLyricText = rememberSaveable { mutableStateOf("") }
+
+    val showExportDialogState = rememberSaveable { mutableStateOf(false) }
+    val fileNameInputState = rememberSaveable { mutableStateOf("lyric.lrc") }
+    val showFolderPickerState = rememberSaveable { mutableStateOf(false) }
+    val showPermTipState = rememberSaveable { mutableStateOf(false) }
+    val hasStoragePermission = rememberSaveable {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Environment.isExternalStorageManager()
+            } else {
+                true
+            }
+        )
+    }
+    val themeMode = rememberSaveable { mutableStateOf(initialTheme) }
+
+    // ============ 不可序列化状态（remember） ============
     val lyricList = remember { mutableStateListOf<LyricLine>() }
-    // 当前选中的行索引
-    val selectedIndex = remember { mutableStateOf(0) }
-
-    // 导航
-    val currentTab = remember { mutableStateOf(TabPage.InputText) }
-    val rawLyricText = remember { mutableStateOf("") }
-
-    // 导出
-    val showExportDialogState = remember { mutableStateOf(false) }
+    val playerState = remember { mutableStateOf<ExoPlayer?>(null) }
     val selectedSaveDirState = remember { mutableStateOf<File?>(null) }
-    val fileNameInputState = remember { mutableStateOf("lyric.lrc") }
-
-    // 文件夹选择器
-    val showFolderPickerState = remember { mutableStateOf(false) }
     val currentBrowseDirState = remember { mutableStateOf(Environment.getExternalStorageDirectory()) }
     val dirChildrenState = remember { mutableStateOf(listOf<File>()) }
     val canGoUpState = remember { mutableStateOf(false) }
+
+    // ============ 启动时自动检测权限 ============
+    LaunchedEffect(Unit) {
+        delay(500)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            showPermTipState.value = true
+        }
+    }
 
     // ============ 切换到时间页时自动同步歌词 ============
     LaunchedEffect(currentTab.value) {
@@ -102,7 +163,6 @@ fun LyricEditor() {
                         LyricLine(timeMs = 0, text = text)
                     }
                 }
-                // 检测是否有变化
                 val hasChanged = newList.size != lyricList.size ||
                         newList.zip(lyricList).any { it.first.text != it.second.text }
 
@@ -113,6 +173,17 @@ fun LyricEditor() {
                         selectedIndex.value = 0
                     }
                 }
+            }
+        }
+    }
+
+    // ============ 每次回到设置页刷新权限状态 ============
+    LaunchedEffect(currentTab.value) {
+        if (currentTab.value == TabPage.Setting) {
+            hasStoragePermission.value = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Environment.isExternalStorageManager()
+            } else {
+                true
             }
         }
     }
@@ -133,6 +204,12 @@ fun LyricEditor() {
     }
 
     fun saveLrcToFolder() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            Toast.makeText(context, "请先授予全部文件访问权限", Toast.LENGTH_SHORT).show()
+            showPermTipState.value = true
+            return
+        }
+
         val saveDir = selectedSaveDirState.value
         val fileName = fileNameInputState.value.trim()
         if (saveDir == null) {
@@ -207,7 +284,6 @@ fun LyricEditor() {
         }
     }
 
-    // 导入歌词（初始化列表）
     fun importLyrics(text: String) {
         val lines = text.split("\n")
             .map { it.trim() }
@@ -233,16 +309,28 @@ fun LyricEditor() {
         currentTab.value = TabPage.RecordTime
     }
 
-    // 清除时间戳
     fun resetLyricTime(index: Int) {
-        if (index in lyricList.indices) {
-            val current = lyricList[index]
-            if (current.timeMs == 0L) return
-            lyricList[index] = current.copy(timeMs = 0)
+        if (index !in lyricList.indices) return
+
+        val current = lyricList[index]
+        if (current.timeMs == 0L) return
+
+        lyricList[index] = current.copy(timeMs = 0)
+        selectedIndex.value = index
+
+        val prevIndex = index - 1
+        val targetTime = if (prevIndex >= 0 && lyricList[prevIndex].timeMs > 0) {
+            lyricList[prevIndex].timeMs
+        } else {
+            0L
         }
+
+        playerState.value?.seekTo(targetTime)
+        currentPosState.value = targetTime
+
+        Toast.makeText(context, "已清除，跳转到上一行", Toast.LENGTH_SHORT).show()
     }
 
-    // 记录当前时间到选中行，自动跳转下一行
     fun recordCurrentTime() {
         if (lyricList.isEmpty()) {
             Toast.makeText(context, "请先导入歌词", Toast.LENGTH_SHORT).show()
@@ -265,7 +353,6 @@ fun LyricEditor() {
         }
     }
 
-    // 选中某行并跳转音频
     fun selectLyricLine(index: Int) {
         if (index !in lyricList.indices) return
 
@@ -283,24 +370,25 @@ fun LyricEditor() {
         bottomBar = {
             NavigationBar(
                 containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 4.dp
+                tonalElevation = 0.dp,
+                modifier = Modifier.padding(bottom = 0.dp)
             ) {
                 NavigationBarItem(
                     selected = currentTab.value == TabPage.InputText,
                     onClick = { currentTab.value = TabPage.InputText },
-                    label = { Text("文本") },
+                    label = { Text("歌词", fontSize = 14.dp.value.sp) },
                     icon = {}
                 )
                 NavigationBarItem(
                     selected = currentTab.value == TabPage.RecordTime,
                     onClick = { currentTab.value = TabPage.RecordTime },
-                    label = { Text("时间") },
+                    label = { Text("时间", fontSize = 14.dp.value.sp) },
                     icon = {}
                 )
                 NavigationBarItem(
                     selected = currentTab.value == TabPage.Setting,
                     onClick = { currentTab.value = TabPage.Setting },
-                    label = { Text("设置") },
+                    label = { Text("设置", fontSize = 14.dp.value.sp) },
                     icon = {}
                 )
             }
@@ -345,7 +433,21 @@ fun LyricEditor() {
                         onResetTime = ::resetLyricTime
                     )
 
-                    TabPage.Setting -> SettingScreen()
+                    TabPage.Setting -> SettingScreen(
+                        hasStoragePermission = hasStoragePermission.value,
+                        appVersion = getAppVersion(context),
+                        currentTheme = themeMode.value,
+                        onThemeSelected = { selectedTheme ->
+                            themeMode.value = selectedTheme
+                            themeManager.saveTheme(selectedTheme)
+                            onThemeChanged(selectedTheme)
+                        },
+                        onOpenPermSetting = openPermSetting,
+                        onOpenGitHub = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/BlazeDu"))
+                            context.startActivity(intent)
+                        }
+                    )
                 }
             }
         }
@@ -375,5 +477,23 @@ fun LyricEditor() {
             },
             onDismiss = { showFolderPickerState.value = false }
         )
+
+        PermissionTipDialog(
+            show = showPermTipState.value,
+            onConfirm = {
+                openPermSetting()
+                showPermTipState.value = false
+            },
+            onDismiss = { showPermTipState.value = false }
+        )
+    }
+}
+
+fun getAppVersion(context: android.content.Context): String {
+    return try {
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        packageInfo.versionName ?: "1.0.0"
+    } catch (e: Exception) {
+        "1.0.0"
     }
 }

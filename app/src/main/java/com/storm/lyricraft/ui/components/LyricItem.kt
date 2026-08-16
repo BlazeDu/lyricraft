@@ -18,7 +18,6 @@ import com.storm.lyricraft.data.LyricLine
 @Composable
 fun LyricItemReadOnly(
     data: LyricLine,
-    index: Int,
     isSelected: Boolean,
     onSelect: () -> Unit,
     onResetTime: () -> Unit

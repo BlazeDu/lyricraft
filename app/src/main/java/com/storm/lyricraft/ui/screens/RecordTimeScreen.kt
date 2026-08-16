@@ -1,6 +1,5 @@
 package com.storm.lyricraft.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -113,7 +112,6 @@ fun RecordTimeScreen(
             itemsIndexed(lyricList) { index, item ->
                 LyricItemReadOnly(
                     data = item,
-                    index = index,
                     isSelected = index == selectedIndex,
                     onSelect = { onSelectLine(index) },
                     onResetTime = { onResetTime(index) }
