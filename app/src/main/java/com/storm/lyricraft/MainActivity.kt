@@ -15,7 +15,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -36,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import com.storm.lyricraft.R
@@ -182,7 +188,7 @@ fun LyricEditor(
                 if (hasChanged) {
                     lyricList.clear()
                     lyricList.addAll(newList)
-                    if (selectedIndex.value >= lyricList.size) {
+                    if (selectedIndex.intValue >= lyricList.size) {
                         selectedIndex.intValue = 0
                     }
                 }
@@ -228,7 +234,7 @@ fun LyricEditor(
             Toast.makeText(context, context.getString(R.string.dialog_export_dir_empty), Toast.LENGTH_SHORT).show()
             return
         }
-        if (fileName.isBlank()) {
+        if (fileName.isEmpty()) {
             Toast.makeText(context, context.getString(R.string.dialog_export_name_empty), Toast.LENGTH_SHORT).show()
             return
         }
@@ -271,7 +277,7 @@ fun LyricEditor(
         audioBaseNameState.value = displayName
         newPlayer.setMediaItem(MediaItem.fromUri(uri))
         newPlayer.prepare()
-        durationState.value = newPlayer.duration
+        durationState.longValue = newPlayer.duration
         audioLoadedState.value = true
     }
 
@@ -293,31 +299,6 @@ fun LyricEditor(
         if (showFolderPickerState.value) {
             loadFolderList(currentBrowseDirState.value)
         }
-    }
-
-    fun importLyrics(text: String) {
-        val lines = text.split("\n")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-
-        if (lines.isEmpty()) {
-            Toast.makeText(context, context.getString(R.string.toast_paste_first), Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val newList = lines.mapIndexed { index, line ->
-            if (index < lyricList.size) {
-                lyricList[index].copy(text = line)
-            } else {
-                LyricLine(timeMs = 0, text = line)
-            }
-        }
-
-        lyricList.clear()
-        lyricList.addAll(newList)
-        selectedIndex.intValue = 0
-        Toast.makeText(context, context.getString(R.string.lyrics_import_toast, lines.size), Toast.LENGTH_SHORT).show()
-        currentTab.value = TabPage.RecordTime
     }
 
     fun resetLyricTime(index: Int) {
@@ -387,20 +368,35 @@ fun LyricEditor(
                 NavigationBarItem(
                     selected = currentTab.value == TabPage.InputText,
                     onClick = { currentTab.value = TabPage.InputText },
-                    label = { Text(stringResource(R.string.nav_lyrics), fontSize = 14.sp) },
-                    icon = {}
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.EditNote,
+                            contentDescription = stringResource(R.string.nav_lyrics)
+                        )
+                    },
+                    label = { Text(stringResource(R.string.nav_lyrics), fontSize = 14.sp) }
                 )
                 NavigationBarItem(
                     selected = currentTab.value == TabPage.RecordTime,
                     onClick = { currentTab.value = TabPage.RecordTime },
-                    label = { Text(stringResource(R.string.nav_time), fontSize = 14.sp) },
-                    icon = {}
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.AccessTime,
+                            contentDescription = stringResource(R.string.nav_time)
+                        )
+                    },
+                    label = { Text(stringResource(R.string.nav_time), fontSize = 14.sp) }
                 )
                 NavigationBarItem(
                     selected = currentTab.value == TabPage.Setting,
                     onClick = { currentTab.value = TabPage.Setting },
-                    label = { Text(stringResource(R.string.nav_settings), fontSize = 14.sp) },
-                    icon = {}
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.nav_settings)
+                        )
+                    },
+                    label = { Text(stringResource(R.string.nav_settings), fontSize = 14.sp) }
                 )
             }
         }
@@ -461,7 +457,7 @@ fun LyricEditor(
                         },
                         onOpenPermSetting = openPermSetting,
                         onOpenGitHub = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/BlazeDu"))
+                            val intent = Intent(Intent.ACTION_VIEW, "https://github.com/BlazeDu".toUri())
                             context.startActivity(intent)
                         }
                     )

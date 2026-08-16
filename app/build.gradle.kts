@@ -13,8 +13,8 @@ android {
         applicationId = "com.storm.lyricraft"
         minSdk = 24
         targetSdk = 37
-        versionCode = 4
-        versionName = "3.0.0"
+        versionCode = 5
+        versionName = "3.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -57,7 +57,7 @@ dependencies {
     // Material 基础图标库
     implementation("androidx.compose.material:material-icons-core:1.7.0")
 // 扩展图标（Filled文件夹图标就在这里）
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.material:material-icons-extended:1.7.5")
 
     implementation("androidx.navigation:navigation-compose:2.8.0")
 
