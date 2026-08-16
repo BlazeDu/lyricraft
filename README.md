@@ -31,6 +31,7 @@ This is a **fully offline, local-first** application — no internet connection 
 | 📂 File Browser | Built-in folder picker with directory navigation |
 | 🔐 Permission Handling | Full support for Android 11+ scoped storage |
 | 🎨 Theme Switching | Manual dark/light/system theme toggle in Settings |
+| 🌍 Multi-language | English / Chinese (system or manual switch in Settings) |
 | 🌓 Dark Mode | Auto-switch between Material 3 light/dark themes |
 | 📱 Bottom Navigation | Three tabs: Lyrics / Record Time / Settings |
 
@@ -73,7 +74,8 @@ app/src/main/java/com/storm/lyricraft/
 │       └── SettingScreen.kt       # Settings page
 └── utils/
     ├── TimeUtils.kt               # LRC time formatting
-    └── ThemeManager.kt            # Theme preference management
+    ├── ThemeManager.kt            # Theme preference management
+    └── LocaleManager.kt           # Language preference management
 ```
 
 ## 🚀 Quick Start
@@ -101,7 +103,7 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 
 ## 📱 How to Use
 
-1. **Import Lyrics** — Switch to the **"Lyrics"** tab, paste your plain-text lyrics (one line per sentence), tap **"Import & Go to Tagging"**.
+1. **Import Lyrics** — Switch to the **"Lyrics"** tab, paste your plain-text lyrics (one line per sentence).
 2. **Load Audio** — Go to the **"Time"** tab, tap **"Select Audio"** and choose a local audio file.
 3. **Tag Timestamps** — Tap **"Play"** to start playback. At each lyric line, tap **"Record Current Time"** — the timestamp is saved and the next line is auto-selected.
 4. **Select & Jump** — Click any lyric line to select it and seek audio to its timestamp.
@@ -157,4 +159,4 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
 
-**Made with ❤️ by BlazeDu**
+**Made with ❤️ by Blaze Du**
