@@ -13,30 +13,47 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.storm.lyricraft.utils.ThemeManager
 
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF2979FF),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFE3F2FD),
-    onPrimaryContainer = Color(0xFF0D47A1),
-    background = Color(0xFFFAFAFA),
-    onBackground = Color(0xFF121212),
-    surface = Color.White,
-    onSurface = Color(0xFF121212),
-    surfaceVariant = Color(0xFFE8EAF6),
-    onSurfaceVariant = Color(0xFF31313C)
-)
-
+// 深色模式保持不变
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF64B5F6),
-    onPrimary = Color(0xFF002984),
-    primaryContainer = Color(0xFF153660),
-    onPrimaryContainer = Color(0xFFD0E4FF),
+    primary = Color(0xFF9FA8DA),
+    onPrimary = Color(0xFF1A1A2E),
+    primaryContainer = Color(0xFF2D2D6E),
+    onPrimaryContainer = Color(0xFFD0D4F0),
     background = Color(0xFF121212),
     onBackground = Color(0xFFE0E0E0),
     surface = Color(0xFF1E1E1E),
     onSurface = Color(0xFFE0E0E0),
     surfaceVariant = Color(0xFF2D2D3A),
     onSurfaceVariant = Color(0xFFC5C6D0)
+)
+
+// 浅色模式 — 干净、清爽、层次分明
+private val LightColorScheme = lightColorScheme(
+    // 主色 — 干净紫色，不脏
+    primary = Color(0xFF7C5CBF),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE8DDFF),
+    onPrimaryContainer = Color(0xFF3D1F7A),
+
+    secondary = Color(0xFF9A7BCB),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFEDE3FF),
+    onSecondaryContainer = Color(0xFF452A7A),
+
+    // 背景 — 干净暖白，不灰
+    background = Color(0xFFF8F6FA),
+    onBackground = Color(0xFF1C1A2A),
+
+    // 表面 — 纯白卡片
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF1C1A2A),
+
+    // 底栏 — 干净浅紫灰，不脏
+    surfaceVariant = Color(0xFFE8E4F0),
+    onSurfaceVariant = Color(0xFF4A3D5E),
+
+    outline = Color(0xFFD5CEE0),
+    outlineVariant = Color(0xFFE3DDEA)
 )
 
 @Composable

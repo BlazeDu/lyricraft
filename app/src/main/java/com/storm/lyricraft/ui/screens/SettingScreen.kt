@@ -2,6 +2,7 @@ package com.storm.lyricraft.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -60,7 +61,6 @@ fun SettingScreen(
                 .fillMaxSize()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            // 标题
             Text(
                 text = stringResource(R.string.settings_title),
                 fontSize = 24.sp,
@@ -78,6 +78,7 @@ fun SettingScreen(
                 modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
             )
 
+            // ============ 主题 ============
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -233,7 +234,6 @@ fun SettingScreen(
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                // 检查更新
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -266,7 +266,6 @@ fun SettingScreen(
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
 
-                // 版本号
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -299,7 +298,6 @@ fun SettingScreen(
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
 
-                // 开发者
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

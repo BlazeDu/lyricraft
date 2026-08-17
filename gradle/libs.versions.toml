@@ -11,6 +11,7 @@ composeBom = "2026.02.01"
 androidx-media3 = "1.6.0"
 # 新增图标版本
 composeIcons = "1.7.6"
+foundation = "1.11.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -33,6 +34,7 @@ androidx-compose-icons-outlined = { group = "androidx.compose.material", name = 
 # Media3 必须严格和build.gradle引用名称对应！
 androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "androidx-media3" }
 androidx-media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "androidx-media3" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

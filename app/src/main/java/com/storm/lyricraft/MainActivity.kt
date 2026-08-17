@@ -140,7 +140,6 @@ fun LyricEditor(
     val scope = rememberCoroutineScope()
     val updateManager = remember { UpdateManager(context) }
 
-    // 更新相关状态
     val showUpdateDialogState = rememberSaveable { mutableStateOf(false) }
     val updateInfoState = rememberSaveable { mutableStateOf<UpdateInfo?>(null) }
     val isCheckingUpdate = rememberSaveable { mutableStateOf(false) }
@@ -539,7 +538,6 @@ fun LyricEditor(
             onDismiss = { showPermTipState.value = false }
         )
 
-        // ============ 更新对话框 ============
         if (showUpdateDialogState.value && updateInfoState.value != null) {
             val info = updateInfoState.value!!
             AlertDialog(
@@ -598,7 +596,6 @@ fun LyricEditor(
             )
         }
 
-        // ============ 下载进度对话框 ============
         if (showDownloadDialog.value) {
             AlertDialog(
                 onDismissRequest = {},

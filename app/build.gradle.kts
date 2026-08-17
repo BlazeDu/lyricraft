@@ -13,8 +13,8 @@ android {
         applicationId = "com.storm.lyricraft"
         minSdk = 24
         targetSdk = 37
-        versionCode = 8
-        versionName = "3.4.0"
+        versionCode = 9
+        versionName = "4.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,6 +36,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.foundation)
     val composeBom = platform("androidx.compose:compose-bom:2026.02.01")
     implementation(composeBom)
 
