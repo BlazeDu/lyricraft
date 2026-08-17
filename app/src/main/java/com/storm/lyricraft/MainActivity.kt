@@ -1,8 +1,6 @@
 package com.storm.lyricraft
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -18,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -28,12 +27,14 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -49,7 +50,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
@@ -90,15 +90,6 @@ class MainActivity : ComponentActivity() {
         val localeManager = LocaleManager(newBase)
         val context = localeManager.applyLanguage(newBase)
         super.attachBaseContext(context)
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        // 通知权限请求结果，不做特殊处理
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -153,6 +144,8 @@ fun LyricEditor(
     val showUpdateDialogState = rememberSaveable { mutableStateOf(false) }
     val updateInfoState = rememberSaveable { mutableStateOf<UpdateInfo?>(null) }
     val isCheckingUpdate = rememberSaveable { mutableStateOf(false) }
+    val showDownloadDialog = rememberSaveable { mutableStateOf(false) }
+    val downloadProgress = rememberSaveable { mutableIntStateOf(0) }
 
     val currentPosState = rememberSaveable { mutableLongStateOf(0L) }
     val durationState = rememberSaveable { mutableLongStateOf(0L) }
@@ -191,20 +184,6 @@ fun LyricEditor(
         delay(500)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
             showPermTipState.value = true
-        }
-        // Android 13+ 检查通知权限
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                // 请求通知权限
-                (context as? ComponentActivity)?.requestPermissions(
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    1002
-                )
-            }
         }
     }
 
@@ -516,7 +495,7 @@ fun LyricEditor(
                                 }
                                 override fun onError(message: String) {
                                     isCheckingUpdate.value = false
-                                    Toast.makeText(context, "$message", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                 }
                             })
                         }
@@ -588,7 +567,25 @@ fun LyricEditor(
                 confirmButton = {
                     Button(onClick = {
                         showUpdateDialogState.value = false
-                        updateManager.downloadAndInstall(info)
+                        updateManager.downloadAndInstall(
+                            updateInfo = info,
+                            onProgress = { progress ->
+                                downloadProgress.intValue = progress
+                                if (!showDownloadDialog.value) {
+                                    showDownloadDialog.value = true
+                                }
+                            },
+                            onComplete = {
+                                showDownloadDialog.value = false
+                                downloadProgress.intValue = 0
+                                Toast.makeText(context, "下载完成，开始安装", Toast.LENGTH_SHORT).show()
+                            },
+                            onFailed = { message ->
+                                showDownloadDialog.value = false
+                                downloadProgress.intValue = 0
+                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                            }
+                        )
                     }) {
                         Text(stringResource(R.string.update_btn_install))
                     }
@@ -596,6 +593,38 @@ fun LyricEditor(
                 dismissButton = {
                     Button(onClick = { showUpdateDialogState.value = false }) {
                         Text(stringResource(R.string.update_btn_later))
+                    }
+                }
+            )
+        }
+
+        // ============ 下载进度对话框 ============
+        if (showDownloadDialog.value) {
+            AlertDialog(
+                onDismissRequest = {},
+                title = { Text("正在下载更新") },
+                text = {
+                    Column {
+                        Text("下载进度：${downloadProgress.intValue}%")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { downloadProgress.intValue / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = {
+                        updateManager.cancelDownload()
+                        showDownloadDialog.value = false
+                        downloadProgress.intValue = 0
+                    }) {
+                        Text("取消")
                     }
                 }
             )

@@ -1,23 +1,13 @@
 package com.storm.lyricraft.utils
 
-import android.Manifest
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
 import android.widget.Toast
-import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import com.google.gson.Gson
-import com.storm.lyricraft.R
 import com.storm.lyricraft.data.UpdateInfo
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,9 +25,14 @@ class UpdateManager(private val context: Context) {
 
     companion object {
         private const val GITHUB_API = "https://api.github.com/repos/BlazeDu/lyricraft/releases/latest"
-        private const val NOTIFICATION_ID = 1001
-        private const val CHANNEL_ID = "update_channel"
     }
+
+    private var onProgressUpdate: ((Int) -> Unit)? = null
+    private var onDownloadComplete: (() -> Unit)? = null
+    private var onDownloadFailed: ((String) -> Unit)? = null
+    private var isDownloading = false
+    private var isCancelled = false
+    private var downloadThread: Thread? = null
 
     private val client: OkHttpClient by lazy {
         try {
@@ -56,7 +51,7 @@ class UpdateManager(private val context: Context) {
                 .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
                 .hostnameVerifier { _, _ -> true }
                 .build()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
@@ -109,9 +104,9 @@ class UpdateManager(private val context: Context) {
                     }
                 }
 
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 mainHandler.post {
-                    callback.onError("网络错误: ${e.message}")
+                    callback.onError("网络错误，请检查网络连接")
                 }
             }
         }.start()
@@ -121,7 +116,7 @@ class UpdateManager(private val context: Context) {
         return try {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             packageInfo.versionName ?: "1.0.0"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "1.0.0"
         }
     }
@@ -139,60 +134,71 @@ class UpdateManager(private val context: Context) {
         return 0
     }
 
-    fun downloadAndInstall(updateInfo: UpdateInfo) {
+    fun downloadAndInstall(
+        updateInfo: UpdateInfo,
+        onProgress: (Int) -> Unit,
+        onComplete: () -> Unit,
+        onFailed: (String) -> Unit
+    ) {
+        if (isDownloading) {
+            Toast.makeText(context, "正在下载中...", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val asset = updateInfo.assets.firstOrNull { it.name.endsWith(".apk") }
         if (asset == null) {
             mainHandler.post {
-                Toast.makeText(context, "未找到 APK 文件", Toast.LENGTH_SHORT).show()
+                onFailed("未找到 APK 文件")
             }
             return
         }
 
-        // Android 8+ 检查安装权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val pm = context.packageManager
             if (!pm.canRequestPackageInstalls()) {
-                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
                 intent.data = Uri.parse("package:${context.packageName}")
                 context.startActivity(intent)
                 mainHandler.post {
-                    Toast.makeText(context, "请先开启「允许安装未知来源应用」权限", Toast.LENGTH_LONG).show()
+                    onFailed("请先开启「允许安装未知来源应用」权限")
                 }
                 return
             }
         }
 
-        // 检查通知权限 (Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-                // 请求通知权限
-                (context as? androidx.activity.ComponentActivity)?.requestPermissions(
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    1002
-                )
-            }
-        }
+        isDownloading = true
+        isCancelled = false
+        this.onProgressUpdate = onProgress
+        this.onDownloadComplete = onComplete
+        this.onDownloadFailed = onFailed
 
         startDownload(asset.downloadUrl)
     }
 
+    fun cancelDownload() {
+        isCancelled = true
+        isDownloading = false
+        downloadThread?.interrupt()
+        onProgressUpdate = null
+        onDownloadComplete = null
+        onDownloadFailed = null
+        mainHandler.post {
+            Toast.makeText(context, "已取消下载", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun startDownload(downloadUrl: String) {
-        // 使用应用私有目录，避免 Android 11+ 权限问题
         val downloadDir = File(context.getExternalFilesDir(null), "downloads")
         if (!downloadDir.exists()) {
             downloadDir.mkdirs()
         }
         val apkFile = File(downloadDir, "lyricraft_latest.apk")
 
-        // 如果文件已存在，删除重新下载
         if (apkFile.exists()) {
             apkFile.delete()
         }
 
-        createNotification()
-
-        Thread {
+        downloadThread = Thread {
             try {
                 val url = URL(downloadUrl)
                 val connection = url.openConnection()
@@ -208,11 +214,27 @@ class UpdateManager(private val context: Context) {
                 val contentLength = connection.contentLength.toLong()
 
                 while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                    if (isCancelled) {
+                        inputStream.close()
+                        outputStream.close()
+                        apkFile.delete()
+                        mainHandler.post {
+                            isDownloading = false
+                            downloadThread = null
+                            onDownloadFailed?.invoke("下载已取消")
+                            onProgressUpdate = null
+                            onDownloadComplete = null
+                            onDownloadFailed = null
+                        }
+                        return@Thread
+                    }
                     outputStream.write(buffer, 0, bytesRead)
                     totalRead += bytesRead
                     if (contentLength > 0) {
                         val progress = (totalRead * 100 / contentLength).toInt()
-                        updateNotification(progress)
+                        mainHandler.post {
+                            onProgressUpdate?.invoke(progress)
+                        }
                     }
                 }
 
@@ -220,20 +242,32 @@ class UpdateManager(private val context: Context) {
                 inputStream.close()
 
                 mainHandler.post {
-                    Toast.makeText(context, "下载完成，开始安装", Toast.LENGTH_SHORT).show()
-                    // 延迟一点确保通知已更新
-                    Handler(Looper.getMainLooper()).postDelayed({
+                    isDownloading = false
+                    downloadThread = null
+                    if (!isCancelled) {
+                        onDownloadComplete?.invoke()
+                        onProgressUpdate = null
+                        onDownloadComplete = null
+                        onDownloadFailed = null
                         installApk(apkFile)
-                    }, 500)
+                    }
                 }
 
             } catch (e: Exception) {
                 mainHandler.post {
-                    Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_LONG).show()
-                    cancelNotification()
+                    isDownloading = false
+                    downloadThread = null
+                    if (!isCancelled) {
+                        val msg = onDownloadFailed
+                        onProgressUpdate = null
+                        onDownloadComplete = null
+                        onDownloadFailed = null
+                        msg?.invoke("下载失败: ${e.message}")
+                    }
                 }
             }
-        }.start()
+        }
+        downloadThread?.start()
     }
 
     private fun installApk(file: File) {
@@ -259,48 +293,5 @@ class UpdateManager(private val context: Context) {
                 Toast.makeText(context, "安装失败: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
-    }
-
-    private fun createNotification() {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "更新下载",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("正在下载更新")
-            .setContentText("0%")
-            .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
-
-        notificationManager.notify(NOTIFICATION_ID, notification)
-    }
-
-    private fun updateNotification(progress: Int) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("正在下载更新")
-            .setContentText("$progress%")
-            .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setProgress(100, progress, false)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
-
-        notificationManager.notify(NOTIFICATION_ID, notification)
-    }
-
-    private fun cancelNotification() {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(NOTIFICATION_ID)
     }
 }
