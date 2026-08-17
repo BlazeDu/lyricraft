@@ -45,7 +45,8 @@ fun SettingScreen(
     onThemeSelected: (String) -> Unit,
     onLanguageSelected: (String) -> Unit,
     onOpenPermSetting: () -> Unit,
-    onOpenGitHub: () -> Unit
+    onOpenGitHub: () -> Unit,
+    onCheckUpdate: () -> Unit
 ) {
     val showThemeDialog = remember { mutableStateOf(false) }
     val showLanguageDialog = remember { mutableStateOf(false) }
@@ -232,6 +233,40 @@ fun SettingScreen(
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
+                // 检查更新
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onCheckUpdate() }
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SystemUpdate,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(R.string.settings_check_update),
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+
+                // 版本号
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -264,6 +299,7 @@ fun SettingScreen(
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
 
+                // 开发者
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

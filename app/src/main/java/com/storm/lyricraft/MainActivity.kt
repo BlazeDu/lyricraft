@@ -1,6 +1,8 @@
 package com.storm.lyricraft
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -13,14 +15,20 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -41,11 +49,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import com.storm.lyricraft.R
 import com.storm.lyricraft.data.LyricLine
+import com.storm.lyricraft.data.UpdateInfo
 import com.storm.lyricraft.ui.components.ExportDialog
 import com.storm.lyricraft.ui.components.FolderPickerDialog
 import com.storm.lyricraft.ui.components.PermissionTipDialog
@@ -56,6 +66,7 @@ import com.storm.lyricraft.ui.screens.SettingScreen
 import com.storm.lyricraft.ui.theme.AppTheme
 import com.storm.lyricraft.utils.LocaleManager
 import com.storm.lyricraft.utils.ThemeManager
+import com.storm.lyricraft.utils.UpdateManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -79,6 +90,15 @@ class MainActivity : ComponentActivity() {
         val localeManager = LocaleManager(newBase)
         val context = localeManager.applyLanguage(newBase)
         super.attachBaseContext(context)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // 通知权限请求结果，不做特殊处理
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,6 +147,12 @@ fun LyricEditor(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val updateManager = remember { UpdateManager(context) }
+
+    // 更新相关状态
+    val showUpdateDialogState = rememberSaveable { mutableStateOf(false) }
+    val updateInfoState = rememberSaveable { mutableStateOf<UpdateInfo?>(null) }
+    val isCheckingUpdate = rememberSaveable { mutableStateOf(false) }
 
     val currentPosState = rememberSaveable { mutableLongStateOf(0L) }
     val durationState = rememberSaveable { mutableLongStateOf(0L) }
@@ -165,6 +191,20 @@ fun LyricEditor(
         delay(500)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
             showPermTipState.value = true
+        }
+        // Android 13+ 检查通知权限
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // 请求通知权限
+                (context as? ComponentActivity)?.requestPermissions(
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    1002
+                )
+            }
         }
     }
 
@@ -361,7 +401,7 @@ fun LyricEditor(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar(
-                containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 tonalElevation = 0.dp,
                 modifier = Modifier.padding(bottom = 0.dp)
             ) {
@@ -405,7 +445,7 @@ fun LyricEditor(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            color = androidx.compose.material3.MaterialTheme.colorScheme.background
+            color = MaterialTheme.colorScheme.background
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 when (currentTab.value) {
@@ -457,8 +497,28 @@ fun LyricEditor(
                         },
                         onOpenPermSetting = openPermSetting,
                         onOpenGitHub = {
-                            val intent = Intent(Intent.ACTION_VIEW, "https://github.com/BlazeDu".toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, "https://github.com/BlazeDu/lyricraft".toUri())
                             context.startActivity(intent)
+                        },
+                        onCheckUpdate = {
+                            if (isCheckingUpdate.value) return@SettingScreen
+                            isCheckingUpdate.value = true
+                            Toast.makeText(context, context.getString(R.string.settings_checking_update), Toast.LENGTH_SHORT).show()
+                            updateManager.checkUpdate(object : UpdateManager.UpdateCallback {
+                                override fun onUpdateAvailable(updateInfo: UpdateInfo) {
+                                    isCheckingUpdate.value = false
+                                    updateInfoState.value = updateInfo
+                                    showUpdateDialogState.value = true
+                                }
+                                override fun onNoUpdate() {
+                                    isCheckingUpdate.value = false
+                                    Toast.makeText(context, context.getString(R.string.update_no_update), Toast.LENGTH_SHORT).show()
+                                }
+                                override fun onError(message: String) {
+                                    isCheckingUpdate.value = false
+                                    Toast.makeText(context, "$message", Toast.LENGTH_SHORT).show()
+                                }
+                            })
                         }
                     )
                 }
@@ -499,6 +559,47 @@ fun LyricEditor(
             },
             onDismiss = { showPermTipState.value = false }
         )
+
+        // ============ 更新对话框 ============
+        if (showUpdateDialogState.value && updateInfoState.value != null) {
+            val info = updateInfoState.value!!
+            AlertDialog(
+                onDismissRequest = { showUpdateDialogState.value = false },
+                title = { Text(stringResource(R.string.update_title)) },
+                text = {
+                    Column {
+                        Text(
+                            text = "${stringResource(R.string.update_title)} ${info.tagName}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = info.body.take(300),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "${stringResource(R.string.update_release_date)}: ${info.publishedAt.take(10)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        showUpdateDialogState.value = false
+                        updateManager.downloadAndInstall(info)
+                    }) {
+                        Text(stringResource(R.string.update_btn_install))
+                    }
+                },
+                dismissButton = {
+                    Button(onClick = { showUpdateDialogState.value = false }) {
+                        Text(stringResource(R.string.update_btn_later))
+                    }
+                }
+            )
+        }
     }
 }
 

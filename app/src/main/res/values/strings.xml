@@ -42,6 +42,22 @@
     <string name="settings_language_chinese">中文</string>
     <string name="settings_language_follow_system">Follow System</string>
     <string name="settings_language_dialog_title">Select Language</string>
+    <string name="settings_check_update">Check for Updates</string>
+    <string name="settings_checking_update">Checking for updates…</string>
+
+    <!-- 更新弹窗 -->
+    <string name="update_title">New Version Available</string>
+    <string name="update_btn_install">Update Now</string>
+    <string name="update_btn_later">Later</string>
+    <string name="update_release_date">Released</string>
+    <string name="update_no_update">Already the latest version</string>
+    <string name="update_check_error">Failed to check for updates</string>
+    <string name="update_network_error">Network error</string>
+    <string name="update_download_failed">Download failed</string>
+    <string name="update_download_complete">Download complete, starting installation</string>
+
+    <!-- 安装权限 -->
+    <string name="update_install_permission_required">Please allow installation from unknown sources first</string>
 
     <!-- 导出弹窗 -->
     <string name="dialog_export_title">Export LRC</string>
@@ -70,5 +86,5 @@
     <string name="toast_permission_required">Please grant all files access permission first</string>
     <string name="toast_import_first">Please import lyrics first</string>
     <string name="toast_paste_first">Please paste lyrics first</string>
-    <string name="lyrics_import_toast">Imported %d lines</string>
+    <string name="toast_import_success">Imported %d lines</string>
 </resources>

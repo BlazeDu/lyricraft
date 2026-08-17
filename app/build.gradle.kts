@@ -13,8 +13,8 @@ android {
         applicationId = "com.storm.lyricraft"
         minSdk = 24
         targetSdk = 37
-        versionCode = 5
-        versionName = "3.1.0"
+        versionCode = 7
+        versionName = "3.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,6 +47,12 @@ dependencies {
     implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
 
+
+    // Gson - 解析 GitHub API JSON
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // OkHttp - 网络请求
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Media3音频播放器
     implementation("androidx.media3:media3-exoplayer:1.6.0")
