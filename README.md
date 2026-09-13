@@ -26,13 +26,13 @@ This is a **fully offline, local-first** application — no internet connection 
 | 🎵 Audio Loading | Load local audio files with ExoPlayer — play, pause, seek |
 | ⏱️ Time Tagging | One-tap timestamp recording while playing, auto-advance to next line |
 | ✏️ Real-time Editing | Modify lyric text in the Lyrics tab, changes sync to Time tab instantly |
-| 🎯 Click to Jump | Click any lyric line to seek audio to its timestamp |
+| 🎯 Click to Jump | Click any lyric line to select it and seek audio to its timestamp |
 | 💾 LRC Export | Custom save path and filename, generate standard `.lrc` files |
 | 📂 File Browser | Built-in folder picker with directory navigation |
 | 🔐 Permission Handling | Full support for Android 11+ scoped storage |
 | 🎨 Theme Switching | Manual dark/light/system theme toggle in Settings |
 | 🌍 Multi-language | English / Chinese (system or manual switch in Settings) |
-| 🌓 Dark Mode | Auto-switch between Material 3 light/dark themes |
+| 🔄 In-app Update | Check for updates via GitHub Releases, download and install APK in-app |
 | 📱 Bottom Navigation | Three tabs: Lyrics / Record Time / Settings |
 
 ## 🛠️ Technology Stack
@@ -44,6 +44,7 @@ This is a **fully offline, local-first** application — no internet connection 
 | **ExoPlayer** | Official Google audio playback engine |
 | **Activity Result API** | Modern file picker callbacks |
 | **Kotlin Coroutines** | IO operations and UI updates |
+| **OkHttp + Gson** | HTTP requests and JSON parsing for update checking |
 
 ## 🏗️ Architecture
 
@@ -57,7 +58,8 @@ This is a **fully offline, local-first** application — no internet connection 
 app/src/main/java/com/storm/lyricraft/
 ├── MainActivity.kt                 # Entry point & global state
 ├── data/
-│   └── LyricLine.kt                # Lyric data model
+│   ├── LyricLine.kt                # Lyric data model
+│   └── UpdateInfo.kt               # GitHub Release data model
 ├── ui/
 │   ├── theme/
 │   │   ├── Color.kt               # Color definitions
@@ -75,7 +77,8 @@ app/src/main/java/com/storm/lyricraft/
 └── utils/
     ├── TimeUtils.kt               # LRC time formatting
     ├── ThemeManager.kt            # Theme preference management
-    └── LocaleManager.kt           # Language preference management
+    ├── LocaleManager.kt           # Language preference management
+    └── UpdateManager.kt           # In-app update checker & downloader
 ```
 
 ## 🚀 Quick Start
@@ -93,7 +96,7 @@ app/src/main/java/com/storm/lyricraft/
 
 ```bash
 # Clone the repository
-git clone https://github.com/BlazeDu/Lyricraft.git
+git clone https://github.com/BlazeDu/lyricraft.git
 
 # Open in Android Studio and sync Gradle
 
@@ -108,6 +111,7 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 3. **Tag Timestamps** — Tap **"Play"** to start playback. At each lyric line, tap **"Record Current Time"** — the timestamp is saved and the next line is auto-selected.
 4. **Select & Jump** — Click any lyric line to select it and seek audio to its timestamp.
 5. **Export LRC** — Tap **"Export LRC"**, choose a save folder and filename, then confirm to generate the `.lrc` file.
+6. **Check Updates** — Go to **Settings → Check for Updates** to fetch the latest version from GitHub Releases.
 
 ## ⏱️ Time Format
 
@@ -131,11 +135,11 @@ Timestamps follow the standard LRC format: `[MM:SS.cc]`, for example:
 
 ## 🧩 Future Plans
 
-- [ ] Import and edit existing `.lrc` files
-- [ ] Batch time adjustment / global offset
-- [ ] Lyrics preview with real-time highlight sync
-- [ ] Undo / Redo support
-- [ ] Batch delete lyrics
+- Import and edit existing `.lrc` files
+- AI-assisted automatic timestamp alignment
+- Word-by-word (karaoke) lyric support
+- Batch time adjustment / global offset
+- Undo / Redo support
 
 ## 🤝 Contributing
 

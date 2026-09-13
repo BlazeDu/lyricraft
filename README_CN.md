@@ -32,7 +32,7 @@
 | 🔐 权限适配 | 适配 Android 11+ 全局文件访问权限 |
 | 🎨 主题切换 | 设置页支持深色/浅色/跟随系统手动切换 |
 | 🌍 多语言 | 支持中英文切换（跟随系统或设置页手动切换） |
-| 🌓 深色模式 | 跟随系统自动切换 Material 3 深浅配色 |
+| 🔄 应用内更新 | 通过 GitHub Releases 检查更新，应用内下载并安装 APK |
 | 📱 底部导航 | 歌词导入 / 时间打点 / 设置 三页面切换 |
 
 ## 🛠️ 技术栈
@@ -44,6 +44,7 @@
 | **ExoPlayer** | Google 官方音频播放引擎 |
 | **Activity Result API** | 现代化文件选择回调 |
 | **Kotlin Coroutines** | 协程处理 IO 与 UI 刷新 |
+| **OkHttp + Gson** | 网络请求与 JSON 解析，用于更新检测 |
 
 ## 🏗️ 架构设计
 
@@ -57,7 +58,8 @@
 app/src/main/java/com/storm/lyricraft/
 ├── MainActivity.kt                 # 应用入口 & 全局状态管理
 ├── data/
-│   └── LyricLine.kt                # 歌词数据模型
+│   ├── LyricLine.kt                # 歌词数据模型
+│   └── UpdateInfo.kt               # GitHub Release 数据模型
 ├── ui/
 │   ├── theme/
 │   │   ├── Color.kt               # 配色定义
@@ -75,7 +77,8 @@ app/src/main/java/com/storm/lyricraft/
 └── utils/
     ├── TimeUtils.kt               # LRC 时间格式化工具
     ├── ThemeManager.kt            # 主题偏好管理
-    └── LocaleManager.kt           # 语言偏好管理
+    ├── LocaleManager.kt           # 语言偏好管理
+    └── UpdateManager.kt           # 应用内更新检测与下载
 ```
 
 ## 🚀 快速开始
@@ -93,7 +96,7 @@ app/src/main/java/com/storm/lyricraft/
 
 ```bash
 # 克隆仓库
-git clone https://github.com/BlazeDu/Lyricraft.git
+git clone https://github.com/BlazeDu/lyricraft.git
 
 # 使用 Android Studio 打开项目，等待 Gradle 同步完成
 
@@ -108,6 +111,7 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 3. **时间打点** — 点击 **「播放」** 开始播放，在每句歌词对应时刻点击 **「记录当前歌曲时间」**，应用自动记录并切换至下一行
 4. **选中跳转** — 点击任意歌词行即可选中，音频自动跳转到该行记录的时间点
 5. **导出 LRC** — 点击 **「导出 LRC」**，选择保存文件夹与文件名，确认后生成标准 LRC 文件
+6. **检查更新** — 进入 **设置 → 检查更新**，从 GitHub Releases 获取最新版本
 
 ## ⏱️ 时间格式
 
@@ -131,11 +135,11 @@ git clone https://github.com/BlazeDu/Lyricraft.git
 
 ## 🧩 后续迭代方向
 
-- [ ] 支持导入已有 LRC 文件并编辑
-- [ ] 批量微调时间 / 整体偏移
-- [ ] 歌词预览与播放同步高亮
-- [ ] 撤销 / 重做功能
-- [ ] 批量删除歌词
+- 支持导入已有 LRC 文件并编辑
+- AI 辅助自动时间轴对齐
+- 逐字（卡拉 OK）歌词支持
+- 批量微调时间 / 整体偏移
+- 撤销 / 重做功能
 
 ## 🤝 贡献指南
 
