@@ -2,7 +2,6 @@ package com.storm.lyricraft
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -16,9 +15,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
@@ -54,7 +55,6 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
-import com.storm.lyricraft.R
 import com.storm.lyricraft.data.LyricLine
 import com.storm.lyricraft.data.UpdateInfo
 import com.storm.lyricraft.ui.components.ExportDialog
@@ -72,6 +72,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import com.storm.lyricraft.R
 
 class MainActivity : ComponentActivity() {
 
@@ -95,6 +96,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 强制开启全面屏
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
 
         themeManager = ThemeManager(this)
         localeManager = LocaleManager(this)
@@ -126,7 +130,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// 消除 context.getString 的冗余警告
 @SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -256,7 +259,6 @@ fun LyricEditor(
             return
         }
         if (fileName.isEmpty()) {
-            // 修复了这里的语法错误，移除了非法的 text =
             Toast.makeText(context, context.getString(R.string.dialog_export_name_empty), Toast.LENGTH_SHORT).show()
             return
         }
@@ -426,10 +428,17 @@ fun LyricEditor(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                // 关键点1：消费掉系统给的内边距，防止重复计算
+                .consumeWindowInsets(padding),
             color = MaterialTheme.colorScheme.background
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    // 关键点2：让整个内容区域在键盘弹出时垫高
+                    .imePadding()
+            ) {
                 when (currentTab.value) {
                     TabPage.InputText -> InputTextScreen(
                         rawLyricText = rawLyricText.value,
@@ -513,6 +522,7 @@ fun LyricEditor(
             }
         }
 
+        // ... 弹窗代码保持不变
         ExportDialog(
             show = showExportDialogState.value,
             selectedSaveDir = selectedSaveDirState.value,

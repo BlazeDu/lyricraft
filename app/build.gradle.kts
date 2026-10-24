@@ -13,8 +13,8 @@ android {
         applicationId = "com.storm.lyricraft"
         minSdk = 24
         targetSdk = 37
-        versionCode = 10
-        versionName = "4.1.0"
+        versionCode = 11
+        versionName = "4.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
