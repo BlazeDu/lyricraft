@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -24,9 +25,9 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.ExoPlayer
@@ -52,6 +53,22 @@ fun RecordTimeScreen(
     onRecordTime: () -> Unit,
     onResetTime: (Int) -> Unit
 ) {
+    // 创建 LazyListState 用于控制滚动
+    val listState = rememberLazyListState()
+
+    // 监听选中行变化，自动滚动到居中位置
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex in lyricList.indices) {
+            // 计算偏移量，使当前行居中
+            // 假设每行高度固定，可以用 scrollOffset 进行偏移微调。
+            // 这里我们使用简单的 animateScrollToItem 滚动到目标，稍微加上一点偏移让其视觉居中
+            listState.animateScrollToItem(
+                index = selectedIndex,
+                scrollOffset = -200 // 负值会向上偏移，根据你的行高调整这个值，通常设为列表可视高度的一半左右
+            )
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -93,7 +110,6 @@ fun RecordTimeScreen(
                         .weight(1f)
                         .padding(start = 4.dp)
                 ) {
-                    // 自定义进度条样式
                     Slider(
                         value = currentPos.toFloat(),
                         valueRange = 0f..duration.coerceAtLeast(0).toFloat(),
@@ -142,6 +158,7 @@ fun RecordTimeScreen(
             )
         }
 
+        // 歌词列表
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -154,6 +171,7 @@ fun RecordTimeScreen(
                 .padding(6.dp)
         ) {
             LazyColumn(
+                state = listState, // 绑定 listState
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
