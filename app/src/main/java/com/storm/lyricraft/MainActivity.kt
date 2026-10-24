@@ -1,5 +1,6 @@
 package com.storm.lyricraft
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -80,7 +81,7 @@ class MainActivity : ComponentActivity() {
     private fun jumpPermSetting() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                data = Uri.parse("package:$packageName")
+                data = "package:$packageName".toUri()
             }
             startActivity(intent)
         }
@@ -125,6 +126,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// 消除 context.getString 的冗余警告
+@SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricEditor(
@@ -253,6 +256,7 @@ fun LyricEditor(
             return
         }
         if (fileName.isEmpty()) {
+            // 修复了这里的语法错误，移除了非法的 text =
             Toast.makeText(context, context.getString(R.string.dialog_export_name_empty), Toast.LENGTH_SHORT).show()
             return
         }
@@ -455,7 +459,13 @@ fun LyricEditor(
                         },
                         onSelectLine = ::selectLyricLine,
                         onRecordTime = ::recordCurrentTime,
-                        onResetTime = ::resetLyricTime
+                        onResetTime = ::resetLyricTime,
+                        onUpdateTime = { index, newTimeMs ->
+                            if (index in lyricList.indices) {
+                                lyricList[index] = lyricList[index].copy(timeMs = newTimeMs)
+                                selectedIndex.intValue = index
+                            }
+                        }
                     )
 
                     TabPage.Setting -> SettingScreen(

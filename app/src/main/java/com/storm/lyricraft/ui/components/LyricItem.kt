@@ -30,16 +30,16 @@ fun LyricItemReadOnly(
     data: LyricLine,
     isSelected: Boolean,
     onSelect: () -> Unit,
-    onResetTime: () -> Unit
+    onResetTime: () -> Unit,
+    onEditTime: () -> Unit // 新增：点击时间戳的回调
 ) {
     val hasTime = data.timeMs > 0
 
     val shape = RoundedCornerShape(12.dp)
 
-    // 颜色层次：选中 > 已打点 > 未打点 > 容器背景
     val backgroundColor = when {
         isSelected -> MaterialTheme.colorScheme.primaryContainer
-        hasTime -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+        hasTime -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         else -> Color.Transparent
     }
 
@@ -67,12 +67,19 @@ fun LyricItemReadOnly(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 将时间戳区域单独包裹，增加内边距以便点击
         Text(
             text = if (hasTime) "[${data.formatTime()}]" else "[00:00.00]",
             fontSize = 14.sp,
             fontFamily = FontFamily.Monospace,
             color = timeColor,
-            modifier = Modifier.padding(end = 12.dp)
+            modifier = Modifier
+                .padding(end = 12.dp)
+                .clickable {
+                    onSelect() // 先选中当前行
+                    onEditTime() // 触发编辑弹窗
+                }
+                .padding(4.dp) // 增加一点内边距扩大点击区域
         )
 
         Text(

@@ -17,15 +17,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -51,20 +58,22 @@ fun RecordTimeScreen(
     onSeek: (Long) -> Unit,
     onSelectLine: (Int) -> Unit,
     onRecordTime: () -> Unit,
-    onResetTime: (Int) -> Unit
+    onResetTime: (Int) -> Unit,
+    onUpdateTime: (Int, Long) -> Unit // 新增：更新指定行的时间
 ) {
-    // 创建 LazyListState 用于控制滚动
     val listState = rememberLazyListState()
 
-    // 监听选中行变化，自动滚动到居中位置
+    // 控制编辑弹窗的状态
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editingIndex by remember { mutableStateOf(-1) }
+    var timeInput by remember { mutableStateOf("") }
+    var timeError by remember { mutableStateOf(false) }
+
     LaunchedEffect(selectedIndex) {
         if (selectedIndex in lyricList.indices) {
-            // 计算偏移量，使当前行居中
-            // 假设每行高度固定，可以用 scrollOffset 进行偏移微调。
-            // 这里我们使用简单的 animateScrollToItem 滚动到目标，稍微加上一点偏移让其视觉居中
             listState.animateScrollToItem(
                 index = selectedIndex,
-                scrollOffset = -200 // 负值会向上偏移，根据你的行高调整这个值，通常设为列表可视高度的一半左右
+                scrollOffset = -200
             )
         }
     }
@@ -158,7 +167,6 @@ fun RecordTimeScreen(
             )
         }
 
-        // 歌词列表
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -171,7 +179,7 @@ fun RecordTimeScreen(
                 .padding(6.dp)
         ) {
             LazyColumn(
-                state = listState, // 绑定 listState
+                state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
@@ -181,10 +189,87 @@ fun RecordTimeScreen(
                         data = item,
                         isSelected = index == selectedIndex,
                         onSelect = { onSelectLine(index) },
-                        onResetTime = { onResetTime(index) }
+                        onResetTime = { onResetTime(index) },
+                        onEditTime = {
+                            editingIndex = index
+                            // 格式化当前时间填入输入框，例如 "01:23.45"
+                            timeInput = item.formatTime()
+                            timeError = false
+                            showEditDialog = true
+                        }
                     )
                 }
             }
         }
+    }
+
+    // 修改时间的弹窗
+    if (showEditDialog && editingIndex in lyricList.indices) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("修改时间") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = timeInput,
+                        onValueChange = {
+                            timeInput = it
+                            timeError = false
+                        },
+                        label = { Text("时间格式 (MM:SS.cc)") },
+                        isError = timeError,
+                        singleLine = true
+                    )
+                    if (timeError) {
+                        Text(
+                            text = "格式错误，请使用如 01:23.45",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val newTimeMs = parseTimeToMs(timeInput)
+                    if (newTimeMs != null) {
+                        onUpdateTime(editingIndex, newTimeMs)
+                        showEditDialog = false
+                    } else {
+                        timeError = true
+                    }
+                }) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+}
+
+// 辅助函数：解析 "MM:SS.cc" 格式的字符串为毫秒
+fun parseTimeToMs(timeStr: String): Long? {
+    return try {
+        val parts = timeStr.split(":", ".")
+        if (parts.size >= 3) {
+            val min = parts[0].toLong()
+            val sec = parts[1].toLong()
+            val cs = parts[2].toLong()
+            (min * 60 + sec) * 1000 + cs * 10
+        } else if (parts.size == 2) {
+            // 兼容 "MM:SS" 格式
+            val min = parts[0].toLong()
+            val sec = parts[1].toLong()
+            (min * 60 + sec) * 1000
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        null
     }
 }
