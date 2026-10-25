@@ -32,7 +32,7 @@
 | 🔐 权限适配 | 适配 Android 11+ 全局文件访问权限 |
 | 🎨 主题切换 | 设置页支持深色/浅色/跟随系统手动切换 |
 | 🌍 多语言 | 支持中英文切换（跟随系统或设置页手动切换） |
-| 🔄 应用内更新 | 通过 GitHub Releases 检查更新，应用内下载并安装 APK |
+| 🔄 应用内更新 | 通过 GitHub Releases 检查更新，以 Markdown 显示更新说明，并在应用内下载和安装 APK |
 | 📱 底部导航 | 歌词导入 / 时间打点 / 设置 三页面切换 |
 
 ## 🛠️ 技术栈
@@ -45,10 +45,11 @@
 | **Activity Result API** | 现代化文件选择回调 |
 | **Kotlin Coroutines** | 协程处理 IO 与 UI 刷新 |
 | **OkHttp + Gson** | 网络请求与 JSON 解析，用于更新检测 |
+| **Markwon** | 在应用内更新弹窗中渲染 Markdown 更新说明 |
 
 ## 🏗️ 架构设计
 
-- **单 Activity + 纯 Compose**：无 Fragment，无传统 XML 布局
+- **单 Activity + Compose UI**：无 Fragment 或 XML 布局；更新说明通过 `AndroidView` 互操作渲染 Markdown
 - **状态驱动 UI**：所有状态由 `remember` 托管，数据变更自动刷新视图
 - **轻量简洁**：无 MVVM 过度设计，代码清晰易维护
 
@@ -75,6 +76,7 @@ app/src/main/java/com/storm/lyricraft/
 │       ├── RecordTimeScreen.kt    # 时间打点页（核心）
 │       └── SettingScreen.kt       # 设置页
 └── utils/
+    ├── MarkdownRenderer.kt        # 更新说明 Markdown 渲染
     ├── TimeUtils.kt               # LRC 时间格式化工具
     ├── ThemeManager.kt            # 主题偏好管理
     ├── LocaleManager.kt           # 语言偏好管理

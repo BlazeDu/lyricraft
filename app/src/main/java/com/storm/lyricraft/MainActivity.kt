@@ -60,6 +60,7 @@ import com.storm.lyricraft.data.UpdateInfo
 import com.storm.lyricraft.ui.components.ExportDialog
 import com.storm.lyricraft.ui.components.FolderPickerDialog
 import com.storm.lyricraft.ui.components.PermissionTipDialog
+import com.storm.lyricraft.utils.MarkdownRenderer
 import com.storm.lyricraft.ui.navigation.TabPage
 import com.storm.lyricraft.ui.screens.InputTextScreen
 import com.storm.lyricraft.ui.screens.RecordTimeScreen
@@ -570,10 +571,7 @@ fun LyricEditor(
                             style = MaterialTheme.typography.titleMedium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = info.body.take(300),
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        MarkdownRenderer(markdown = info.body)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "${stringResource(R.string.update_release_date)}: ${info.publishedAt.take(10)}",
