@@ -27,7 +27,7 @@
 | ⏱️ 时间打点 | 播放时一键记录当前进度，自动切换至下一行 |
 | ✏️ 实时编辑 | 在歌词页修改文本，切换到时间页自动同步，时间戳完整保留 |
 | 🎯 点击跳转 | 点击任意歌词行，音频自动跳转到对应时间点 |
-| 💾 导出 LRC | 自定义保存路径与文件名，生成标准 LRC 格式 |
+| 💾 导出 LRC | 自定义保存路径与文件名，并记住上次选择的目录供下次导出使用 |
 | 📂 文件浏览器 | 内置简易文件夹选择器，支持层级跳转 |
 | 🔐 权限适配 | 适配 Android 11+ 全局文件访问权限 |
 | 🎨 主题切换 | 设置页支持深色/浅色/跟随系统手动切换 |
@@ -76,6 +76,7 @@ app/src/main/java/com/storm/lyricraft/
 │       └── SettingScreen.kt       # 设置页
 └── utils/
     ├── TimeUtils.kt               # LRC 时间格式化工具
+    ├── ExportDirectoryManager.kt  # 导出目录偏好管理
     ├── ThemeManager.kt            # 主题偏好管理
     ├── LocaleManager.kt           # 语言偏好管理
     └── UpdateManager.kt           # 应用内更新检测与下载

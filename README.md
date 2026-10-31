@@ -27,7 +27,7 @@ This is a **fully offline, local-first** application — no internet connection 
 | ⏱️ Time Tagging | One-tap timestamp recording while playing, auto-advance to next line |
 | ✏️ Real-time Editing | Modify lyric text in the Lyrics tab, changes sync to Time tab instantly |
 | 🎯 Click to Jump | Click any lyric line to select it and seek audio to its timestamp |
-| 💾 LRC Export | Custom save path and filename, generate standard `.lrc` files |
+| 💾 LRC Export | Choose a save path and filename; the last selected folder is remembered for future exports |
 | 📂 File Browser | Built-in folder picker with directory navigation |
 | 🔐 Permission Handling | Full support for Android 11+ scoped storage |
 | 🎨 Theme Switching | Manual dark/light/system theme toggle in Settings |
@@ -76,6 +76,7 @@ app/src/main/java/com/storm/lyricraft/
 │       └── SettingScreen.kt       # Settings page
 └── utils/
     ├── TimeUtils.kt               # LRC time formatting
+    ├── ExportDirectoryManager.kt  # Export folder preference management
     ├── ThemeManager.kt            # Theme preference management
     ├── LocaleManager.kt           # Language preference management
     └── UpdateManager.kt           # In-app update checker & downloader

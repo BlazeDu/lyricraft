@@ -65,6 +65,7 @@ import com.storm.lyricraft.ui.screens.InputTextScreen
 import com.storm.lyricraft.ui.screens.RecordTimeScreen
 import com.storm.lyricraft.ui.screens.SettingScreen
 import com.storm.lyricraft.ui.theme.AppTheme
+import com.storm.lyricraft.utils.ExportDirectoryManager
 import com.storm.lyricraft.utils.LocaleManager
 import com.storm.lyricraft.utils.ThemeManager
 import com.storm.lyricraft.utils.UpdateManager
@@ -145,6 +146,7 @@ fun LyricEditor(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val updateManager = remember { UpdateManager(context) }
+    val exportDirectoryManager = remember { ExportDirectoryManager(context) }
 
     val showUpdateDialogState = rememberSaveable { mutableStateOf(false) }
     val updateInfoState = rememberSaveable { mutableStateOf<UpdateInfo?>(null) }
@@ -180,7 +182,9 @@ fun LyricEditor(
 
     val lyricList = remember { mutableStateListOf<LyricLine>() }
     val playerState = remember { mutableStateOf<ExoPlayer?>(null) }
-    val selectedSaveDirState = remember { mutableStateOf<File?>(null) }
+    val selectedSaveDirState = remember {
+        mutableStateOf(exportDirectoryManager.getLastDirectory())
+    }
     val currentBrowseDirState = remember { mutableStateOf(Environment.getExternalStorageDirectory()) }
     val dirChildrenState = remember { mutableStateOf(listOf<File>()) }
     val canGoUpState = remember { mutableStateOf(false) }
@@ -231,6 +235,9 @@ fun LyricEditor(
     }
 
     fun loadFolderList(targetDir: File) {
+        currentBrowseDirState.value = targetDir
+        dirChildrenState.value = emptyList()
+        canGoUpState.value = false
         scope.launch(Dispatchers.IO) {
             val list = targetDir.listFiles()
                 ?.filter { it.isDirectory }
@@ -238,11 +245,20 @@ fun LyricEditor(
             val parent = targetDir.parentFile
             val parentAccessible = parent?.listFiles() != null
             scope.launch(Dispatchers.Main) {
-                currentBrowseDirState.value = targetDir
-                dirChildrenState.value = list
-                canGoUpState.value = parentAccessible
+                if (currentBrowseDirState.value == targetDir) {
+                    dirChildrenState.value = list
+                    canGoUpState.value = parentAccessible
+                }
             }
         }
+    }
+
+    fun openFolderPicker() {
+        val initialDir = selectedSaveDirState.value
+            ?.takeIf { it.isDirectory }
+            ?: Environment.getExternalStorageDirectory()
+        loadFolderList(initialDir)
+        showFolderPickerState.value = true
     }
 
     fun saveLrcToFolder() {
@@ -455,6 +471,7 @@ fun LyricEditor(
                         isPlaying = isPlayingState.value,
                         onSelectAudio = { audioPicker.launch("audio/*") },
                         onShowExport = {
+                            selectedSaveDirState.value = exportDirectoryManager.getLastDirectory()
                             fileNameInputState.value = "${audioBaseNameState.value}.lrc"
                             showExportDialogState.value = true
                         },
@@ -528,7 +545,7 @@ fun LyricEditor(
             selectedSaveDir = selectedSaveDirState.value,
             fileNameInput = fileNameInputState.value,
             onFileNameChange = { fileNameInputState.value = it },
-            onSelectDir = { showFolderPickerState.value = true },
+            onSelectDir = ::openFolderPicker,
             onConfirm = ::saveLrcToFolder,
             onDismiss = { showExportDialogState.value = false }
         )
@@ -544,6 +561,7 @@ fun LyricEditor(
             },
             onConfirm = {
                 selectedSaveDirState.value = currentBrowseDirState.value
+                exportDirectoryManager.saveDirectory(currentBrowseDirState.value)
                 showFolderPickerState.value = false
             },
             onDismiss = { showFolderPickerState.value = false }
