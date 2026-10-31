@@ -32,7 +32,7 @@ This is a **fully offline, local-first** application — no internet connection 
 | 🔐 Permission Handling | Full support for Android 11+ scoped storage |
 | 🎨 Theme Switching | Manual dark/light/system theme toggle in Settings |
 | 🌍 Multi-language | English / Chinese (system or manual switch in Settings) |
-| 🔄 In-app Update | Check for updates via GitHub Releases, download and install APK in-app |
+| 🔄 In-app Update | Check for updates via GitHub Releases, view Markdown-formatted release notes, and download and install APK in-app |
 | 📱 Bottom Navigation | Three tabs: Lyrics / Record Time / Settings |
 
 ## 🛠️ Technology Stack
@@ -45,10 +45,11 @@ This is a **fully offline, local-first** application — no internet connection 
 | **Activity Result API** | Modern file picker callbacks |
 | **Kotlin Coroutines** | IO operations and UI updates |
 | **OkHttp + Gson** | HTTP requests and JSON parsing for update checking |
+| **Markwon** | Render Markdown release notes in the in-app update dialog |
 
 ## 🏗️ Architecture
 
-- **Single Activity + Pure Compose**: No Fragments, no XML layouts
+- **Single Activity + Compose UI**: No Fragments or XML layouts; Markdown release notes use `AndroidView` interop
 - **State-driven UI**: All states managed by `remember`, automatic UI updates on data changes
 - **Lightweight**: No MVVM overhead — simple, clean, and maintainable
 
@@ -75,6 +76,7 @@ app/src/main/java/com/storm/lyricraft/
 │       ├── RecordTimeScreen.kt    # Time tagging page (core)
 │       └── SettingScreen.kt       # Settings page
 └── utils/
+    ├── MarkdownRenderer.kt        # Markdown rendering for update release notes
     ├── TimeUtils.kt               # LRC time formatting
     ├── ExportDirectoryManager.kt  # Export folder preference management
     ├── ThemeManager.kt            # Theme preference management

@@ -52,6 +52,9 @@ dependencies {
     // Gson - 解析 GitHub API JSON
     implementation("com.google.code.gson:gson:2.10.1")
 
+    // Markdown rendering for release notes
+    implementation("io.noties.markwon:core:4.6.2")
+
     // OkHttp - 网络请求
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
